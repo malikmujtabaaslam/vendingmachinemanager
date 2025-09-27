@@ -89,7 +89,27 @@ export default function AdminDashboard() {
 
         {/* Unassigned Agents Table */}
         <Card sx={{ boxShadow: 3, borderRadius: 2, mb: 3 }}>
-          <CardHeader title="Unassigned Machines" titleTypographyProps={{ variant: "h6" }} />
+          <CardHeader
+            title="Unassigned Machines"
+            titleTypographyProps={{ variant: "h6" }}
+            action={
+              <a
+                href="/register.sh"
+                download
+                style={{
+                  textDecoration: "none",
+                  padding: "6px 12px",
+                  backgroundColor: "#1976d2",
+                  color: "#fff",
+                  borderRadius: "6px",
+                  fontSize: "0.85rem",
+                  fontWeight: 500,
+                }}
+              >
+                Download register.sh
+              </a>
+            }
+          />
           <CardContent>
             <Table size="small">
               <TableHead>
@@ -102,7 +122,9 @@ export default function AdminDashboard() {
                 {unassignedAgents.length > 0 ? (
                   unassignedAgents.map((agent: any) => {
                     const now = new Date();
-                    const ONLINE_INTERVAL = parseInt(process.env.ONLINE_INTERVAL || "5"); // seconds
+                    const ONLINE_INTERVAL = parseInt(
+                      process.env.ONLINE_INTERVAL || "5"
+                    ); // seconds
                     const isOnline =
                       (now.getTime() - new Date(agent.updatedAt).getTime()) / 1000 <
                       ONLINE_INTERVAL;
@@ -119,7 +141,9 @@ export default function AdminDashboard() {
                               borderRadius: "50%",
                               backgroundColor: isOnline ? "green" : "red",
                             }}
-                          ></span>{agent.id}</TableCell>
+                          ></span>
+                          {agent.id}
+                        </TableCell>
                         <TableCell>{agent.hostname}</TableCell>
                       </TableRow>
                     );

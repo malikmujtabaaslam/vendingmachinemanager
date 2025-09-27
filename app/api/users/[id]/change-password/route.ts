@@ -7,17 +7,22 @@ export async function POST(req: Request) {
   const auth = req.headers.get("authorization")?.replace("Bearer ", "");
   const decoded = auth ? verifyToken(auth) : null;
 
-  if (!decoded || decoded.role !== "admin") {
+  const { userId, password } = await req.json();
+  const hashed = await hashPassword(password);
+
+  if (!decoded) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { userId,password } = await req.json();
-  const hashed = await hashPassword(password);
+  // Admin can update any user, else user can update self only
+  if (decoded.role !== "admin" && decoded.sub !== userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const agent = await prisma.user.update({
+  const user = await prisma.user.update({
     where: { id: userId },
     data: { password: hashed },
   });
 
-  return NextResponse.json({ agent });
+  return NextResponse.json({ user });
 }

@@ -23,19 +23,15 @@ const fetcher = (url: string) =>
 
 export default function AdminDashboard() {
   const { data: jobs } = useSWR("/api/jobs", fetcher);
-  const jobsList = jobs || [];
+  const { data: agents } = useSWR("/api/machines/unassigned", fetcher);
 
-  // utility: consistent job status
+  const jobsList = jobs || [];
+  const unassignedAgents = agents?.agents || [];
+
   function renderJobStatus(job: any) {
-    if (job.pending) {
-      return <Chip label="⏳ Pending" color="warning" size="small" />;
-    }
-    if (!job.pending && job.stderr) {
-      return <Chip label="❌ Failed" color="error" size="small" />;
-    }
-    if (!job.pending && job.stdout) {
-      return <Chip label="✅ Done" color="success" size="small" />;
-    }
+    if (job.pending) return <Chip label="⏳ Pending" color="warning" size="small" />;
+    if (!job.pending && job.stderr) return <Chip label="❌ Failed" color="error" size="small" />;
+    if (!job.pending && job.stdout) return <Chip label="✅ Done" color="success" size="small" />;
     return <Chip label="Unknown" variant="outlined" size="small" />;
   }
 
@@ -49,7 +45,7 @@ export default function AdminDashboard() {
       </Typography>
       <Grid container spacing={3}>
         {/* Jobs Table */}
-        <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
+        <Card sx={{ boxShadow: 3, borderRadius: 2, mb: 3 }}>
           <CardContent>
             <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
               All Jobs
@@ -74,7 +70,7 @@ export default function AdminDashboard() {
                       <TableCell>
                         <code style={{ fontSize: "0.95em" }}>
                           {job.script?.filename
-                              ? job.script.filename.replace(/\.[^/.]+$/, "") // remove last extension
+                            ? job.script.filename.replace(/\.[^/.]+$/, "")
                             : "N/A"}
                         </code>
                       </TableCell>
@@ -91,12 +87,56 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
 
+        {/* Unassigned Agents Table */}
+        <Card sx={{ boxShadow: 3, borderRadius: 2, mb: 3 }}>
+          <CardHeader title="Unassigned Machines" titleTypographyProps={{ variant: "h6" }} />
+          <CardContent>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>Agent ID</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Hostname</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {unassignedAgents.length > 0 ? (
+                  unassignedAgents.map((agent: any) => {
+                    const now = new Date();
+                    const ONLINE_INTERVAL = parseInt(process.env.ONLINE_INTERVAL || "5"); // seconds
+                    const isOnline =
+                      (now.getTime() - new Date(agent.updatedAt).getTime()) / 1000 <
+                      ONLINE_INTERVAL;
+
+                    return (
+                      <TableRow key={agent.id}>
+                        <TableCell>
+                          <span
+                            style={{
+                              display: "inline-block",
+                              width: "10px",
+                              height: "10px",
+                              marginRight: "8px",
+                              borderRadius: "50%",
+                              backgroundColor: isOnline ? "green" : "red",
+                            }}
+                          ></span>{agent.id}</TableCell>
+                        <TableCell>{agent.hostname}</TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3}>No unassigned machines found.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
         {/* Users Table */}
         <Card sx={{ boxShadow: 4, borderRadius: 3 }}>
-          <CardHeader
-            title="Users"
-            titleTypographyProps={{ variant: "h5" }}
-          />
+          <CardHeader title="Users" titleTypographyProps={{ variant: "h5" }} />
           <CardContent>
             <UsersTable editable={false} />
           </CardContent>

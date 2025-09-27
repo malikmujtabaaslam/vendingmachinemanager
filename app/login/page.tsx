@@ -37,7 +37,7 @@ export default function LoginPage() {
           <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
             <Image src="/favicon.ico" alt="Logo" width={40} height={40} />
             <Typography variant="h5" sx={{ ml: 2, fontWeight: 700, color: "primary.main" }}>
-              Ubuntu Script Manager
+              Vending Machine Manager
             </Typography>
           </Box>
           <Typography variant="subtitle1" sx={{ color: "secondary.main", mb: 2 }}>

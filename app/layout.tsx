@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ubuntu Script Manager",
-  description: "Manage scripts and agents with Ubuntu Script Manager",
+  title: "Vending Machine Manager",
+  description: "Manage and run scripts on vending machines running Ubuntu.",
 };
 
 export default function RootLayout({

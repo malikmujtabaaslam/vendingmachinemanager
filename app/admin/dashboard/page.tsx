@@ -15,6 +15,8 @@ import {
   Chip,
 } from "@mui/material";
 import UsersTable from "../../components/UsersTable";
+import DownloadIcon from '@mui/icons-material/Download';
+import DescriptionIcon from '@mui/icons-material/Description';
 
 const fetcher = (url: string) =>
   fetch(url, {
@@ -43,6 +45,54 @@ export default function AdminDashboard() {
       >
         Admin Dashboard
       </Typography>
+      {/* Download Script Card */}
+<Card sx={{ boxShadow: 3, borderRadius: 2, mb: 3 }}>
+  <CardContent
+    sx={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      flexDirection: { xs: "column", sm: "row" },
+      gap: 1,
+    }}
+  >
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <DescriptionIcon color="action" />
+        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+          register.sh
+        </Typography>
+      </Box>
+      <Typography variant="body2" color="text.secondary">
+        This script registers a new machine with the dashboard. Run it on an Ubuntu system
+        to automatically send the machine's hostname and ID to the server and mark it as active.
+      </Typography>
+    </Box>
+
+    <a
+      href="/register.sh"
+      download
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+        textDecoration: "none",
+        padding: "6px 12px",
+        backgroundColor: "#1976d2",
+        color: "#fff",
+        borderRadius: "6px",
+        fontWeight: 500,
+        fontSize: "0.85rem",
+        transition: "background-color 0.2s",
+      }}
+      onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#1565c0")}
+      onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#1976d2")}
+    >
+      <DownloadIcon fontSize="small" />
+      Download
+    </a>
+  </CardContent>
+</Card>
       <Grid container spacing={3}>
         {/* Jobs Table */}
         <Card sx={{ boxShadow: 3, borderRadius: 2, mb: 3 }}>
@@ -92,23 +142,6 @@ export default function AdminDashboard() {
           <CardHeader
             title="Unassigned Machines"
             titleTypographyProps={{ variant: "h6" }}
-            action={
-              <a
-                href="/register.sh"
-                download
-                style={{
-                  textDecoration: "none",
-                  padding: "6px 12px",
-                  backgroundColor: "#1976d2",
-                  color: "#fff",
-                  borderRadius: "6px",
-                  fontSize: "0.85rem",
-                  fontWeight: 500,
-                }}
-              >
-                Download register.sh
-              </a>
-            }
           />
           <CardContent>
             <Table size="small">

@@ -1,10 +1,10 @@
-datasource db {
-  provider = "sqlite"   // change to "postgresql" if using Postgres
-  url      = "file:./dev.db"
-}
-
 generator client {
   provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -24,39 +24,37 @@ model Agent {
   clientUuid String
   token      String
   ownerId    String?
-  owner      User?     @relation("UserAgents", fields: [ownerId], references: [id])
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  scripts    Script[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  owner      User?    @relation("UserAgents", fields: [ownerId], references: [id])
   jobs       Job[]
+  scripts    Script[]
 }
 
 model Script {
-  id         String   @id @default(cuid())
-  filename   String
-  agentId    String?
-  agent      Agent?    @relation(fields: [agentId], references: [id])
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  jobs       Job[]
+  id        String   @id @default(cuid())
+  filename  String
+  agentId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  jobs      Job[]
+  agent     Agent?   @relation(fields: [agentId], references: [id])
 }
 
 model Job {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   scriptId    String
-  script      Script   @relation(fields: [scriptId], references: [id])
-  pending     Boolean  @default(true)
+  pending     Boolean   @default(true)
   stdout      String?
   stderr      String?
   exitCode    Int?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
   completedAt DateTime?
-
-  agentId String
-  agent   Agent @relation(fields: [agentId], references: [id])
-
-  userId String
-  user   User  @relation(fields: [userId], references: [id])
+  agentId     String
+  userId      String
+  agent       Agent     @relation(fields: [agentId], references: [id])
+  script      Script    @relation(fields: [scriptId], references: [id])
+  user        User      @relation(fields: [userId], references: [id])
 }
 
 enum Role {

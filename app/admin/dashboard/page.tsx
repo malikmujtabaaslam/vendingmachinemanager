@@ -48,62 +48,59 @@ export default function AdminDashboard() {
         Admin Dashboard
       </Typography>
       <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                All Jobs
-              </Typography>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Agent</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Script</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {Array.isArray(jobsList) && jobsList.length > 0 ? (
-                    jobsList.map((job: any) => (
-                      <TableRow key={job.id}>
-                        <TableCell>{job.id}</TableCell>
-                        <TableCell>{job.user?.email}</TableCell>
-                        <TableCell>{job.agent?.hostname}</TableCell>
-                        <TableCell>
-                          <code style={{ fontSize: "0.95em" }}>
-                            {job.script?.filename
+        {/* Jobs Table */}
+        <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              All Jobs
+            </Typography>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Agent</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Script</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {Array.isArray(jobsList) && jobsList.length > 0 ? (
+                  jobsList.map((job: any) => (
+                    <TableRow key={job.id}>
+                      <TableCell>{job.id}</TableCell>
+                      <TableCell>{job.user?.email}</TableCell>
+                      <TableCell>{job.agent?.hostname}</TableCell>
+                      <TableCell>
+                        <code style={{ fontSize: "0.95em" }}>
+                          {job.script?.filename
                               ? job.script.filename.replace(/\.[^/.]+$/, "") // remove last extension
-                              : "N/A"}
-                          </code>
-                        </TableCell>
-                        <TableCell>{renderJobStatus(job)}</TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={5}>No jobs found.</TableCell>
+                            : "N/A"}
+                        </code>
+                      </TableCell>
+                      <TableCell>{renderJobStatus(job)}</TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </Grid>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5}>No jobs found.</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
         {/* Users Table */}
-        <Grid item xs={12}>
-          <Card sx={{ borderRadius: 3, boxShadow: 4 }}>
-            <CardHeader
-              title="Users"
-              titleTypographyProps={{ variant: "h5" }}
-            />
-            <CardContent>
-              <UsersTable editable={false} />
-            </CardContent>
-          </Card>
-        </Grid>
+        <Card sx={{ boxShadow: 4, borderRadius: 3 }}>
+          <CardHeader
+            title="Users"
+            titleTypographyProps={{ variant: "h5" }}
+          />
+          <CardContent>
+            <UsersTable editable={false} />
+          </CardContent>
+        </Card>
       </Grid>
     </Box>
   );

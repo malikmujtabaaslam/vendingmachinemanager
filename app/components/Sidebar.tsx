@@ -1,23 +1,51 @@
 "use client";
-import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState, forwardRef } from "react";
+import Link, { type LinkProps } from "next/link";
 import {
-  Box, Card, CardContent, Drawer, List, ListItem, ListItemIcon, ListItemText, Toolbar, Typography, Divider
+  Drawer,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Toolbar,
+  Typography,
+  Divider,
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import GroupIcon from "@mui/icons-material/Group";
 import PersonIcon from "@mui/icons-material/Person";
 import { usePathname } from "next/navigation";
 
+// Wrap Next.js Link to forward ref for MUI ListItem
+const NextLink = forwardRef<HTMLAnchorElement, LinkProps>((props, ref) => (
+  <Link {...props} ref={ref} />
+));
+
 export default function Sidebar() {
   const [role, setRole] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    // Get role from localStorage
     const storedRole = localStorage.getItem("role");
     setRole(storedRole ? storedRole.toLowerCase() : null);
   }, []);
+
+  const menuItems = [
+    {
+      role: "admin",
+      items: [
+        { text: "Dashboard", href: "/admin/dashboard", icon: <DashboardIcon /> },
+        { text: "Users", href: "/admin/users", icon: <GroupIcon /> },
+      ],
+    },
+    {
+      role: "user",
+      items: [
+        { text: "User Dashboard", href: "/user/dashboard", icon: <PersonIcon /> },
+        { text: "Vending Machines", href: "/user/scripts", icon: <PersonIcon /> },
+      ],
+    },
+  ];
 
   return (
     <Drawer
@@ -40,88 +68,35 @@ export default function Sidebar() {
       </Toolbar>
       <Divider />
       <List>
-        {role === "admin" && (
-          <>
-            <ListItem
-              button
-              component={Link}
-              href="/admin/dashboard"
-              selected={pathname === "/admin/dashboard"}
-              sx={{
-                my: 1,
-                borderRadius: 2,
-                color: "common.white",
-                bgcolor: pathname === "/admin/dashboard" ? "primary.light" : "primary.main",
-                "&:hover": { bgcolor: "primary.dark" }
-              }}
-            >
-              <ListItemIcon sx={{ color: "common.white", minWidth: 36 }}>
-                <DashboardIcon />
-              </ListItemIcon>
-              <ListItemText primary="Dashboard" sx={{ color: "common.white" }} />
-            </ListItem>
-            <ListItem
-              button
-              component={Link}
-              href="/admin/users"
-              selected={pathname === "/admin/users"}
-              sx={{
-                my: 1,
-                borderRadius: 2,
-                color: "common.white",
-                bgcolor: pathname === "/admin/users" ? "primary.light" : "primary.main",
-                "&:hover": { bgcolor: "primary.dark" }
-              }}
-            >
-              <ListItemIcon sx={{ color: "common.white", minWidth: 36 }}>
-                <GroupIcon />
-              </ListItemIcon>
-              <ListItemText primary="Users" sx={{ color: "common.white" }} />
-            </ListItem>
-          </>
-        )}
-        {role === "user" && (
-          <>
-            <ListItem
-              button
-              component={Link}
-              href="/user/dashboard"
-              selected={pathname === "/user/dashboard"}
-              sx={{
-                my: 1,
-                borderRadius: 2,
-                color: "common.white",
-                bgcolor: pathname === "/user/dashboard" ? "primary.light" : "primary.main",
-                "&:hover": { bgcolor: "primary.dark" }
-              }}
-            >
-              <ListItemIcon sx={{ color: "common.white", minWidth: 36 }}>
-                <PersonIcon />
-              </ListItemIcon>
-              <ListItemText primary="User Dashboard" sx={{ color: "common.white" }} />
-            </ListItem>
-            <ListItem
-              button
-              component={Link}
-              href="/user/scripts"
-              selected={pathname === "/user/scripts"}
-              sx={{
-                my: 1,
-                borderRadius: 2,
-                color: "common.white",
-                bgcolor: pathname === "/user/scripts" ? "primary.light" : "primary.main",
-                "&:hover": { bgcolor: "primary.dark" }
-              }}
-            >
-              <ListItemIcon sx={{ color: "common.white", minWidth: 36 }}>
-                <PersonIcon />
-              </ListItemIcon>
-              <ListItemText primary="Vending Machines" sx={{ color: "common.white" }} />
-            </ListItem>
-          </>
-
-        )}
+        {menuItems
+          .filter((m) => m.role === role)
+          .flatMap((m) =>
+            m.items.map((item) => {
+              const isSelected = pathname === item.href;
+              return (
+                <ListItem
+                  key={item.href}
+                  component={NextLink}
+                  href={item.href}
+                  sx={{
+                    my: 1,
+                    borderRadius: 2,
+                    color: "common.white",
+                    bgcolor: isSelected ? "primary.light" : "primary.main",
+                    "&:hover": { bgcolor: "primary.dark" },
+                    textDecoration: "none",
+                  }}
+                >
+                  <ListItemIcon sx={{ color: "common.white", minWidth: 36 }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText primary={item.text} sx={{ color: "common.white" }} />
+                </ListItem>
+              );
+            })
+          )}
       </List>
+
       <Divider sx={{ mt: "auto" }} />
 
       <Typography
@@ -134,7 +109,7 @@ export default function Sidebar() {
         variant="caption"
         sx={{ pl: 2, pb: 2, color: "primary.contrastText", opacity: 0.7 }}
       >
-        Developed by:  Mujtaba Aslam{" "}
+        Developed by: Mujtaba Aslam{" "}
         <a
           href="mailto:malikmujtabaaslam@gmail.com"
           style={{ color: "inherit", textDecoration: "underline" }}
@@ -142,7 +117,6 @@ export default function Sidebar() {
           malikmujtabaaslam@gmail.com
         </a>
       </Typography>
-
     </Drawer>
   );
 }

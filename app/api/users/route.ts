@@ -93,6 +93,5 @@ export async function GET(req: Request) {
       };
     })
   );
-console.log("Formatted Users:", formattedUsers[2]['machines']);
   return NextResponse.json({ users: formattedUsers });
 }

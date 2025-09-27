@@ -5,8 +5,12 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get("token")?.value; // Adjust if you use a different cookie/session name
 
-  // Allow public routes
-  if (pathname === "/login" || pathname === "/" || pathname.startsWith("/api")) {
+  if (
+    pathname === "/" ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/api/register") ||
+    pathname.startsWith("/api/login")
+  ) {
     return NextResponse.next();
   }
 

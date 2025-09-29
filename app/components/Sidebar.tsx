@@ -14,6 +14,7 @@ import {
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import GroupIcon from "@mui/icons-material/Group";
 import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
 import { usePathname } from "next/navigation";
 
 // Wrap Next.js Link to forward ref for MUI ListItem
@@ -103,18 +104,17 @@ export default function Sidebar() {
         variant="caption"
         sx={{ pl: 2, color: "primary.contrastText", opacity: 0.7 }}
       >
-        © {new Date().getFullYear()}
+        © {new Date().getFullYear()} Invictus Zone
       </Typography>
       <Typography
         variant="caption"
         sx={{ pl: 2, pb: 2, color: "primary.contrastText", opacity: 0.7 }}
       >
-        Developed by: Mujtaba Aslam{" "}
         <a
-          href="mailto:malikmujtabaaslam@gmail.com"
-          style={{ color: "inherit", textDecoration: "underline" }}
-        >
-          malikmujtabaaslam@gmail.com
+          href="mailto:zoneinvictus@gmail.com"
+          style={{ color: "inherit", textDecoration: "underline", fontSize: '15px' }}
+        ><EmailIcon fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
+          Contact support
         </a>
       </Typography>
     </Drawer>

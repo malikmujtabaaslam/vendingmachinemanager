@@ -18,6 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+import TerminalIcon from "@mui/icons-material/Terminal";
 import JobsTable from "@/app/components/JobsTable";
 import Image from "next/image";
 
@@ -37,7 +38,7 @@ export default function UserDashboard() {
   const { data, error, mutate } = useSWR("/api/machines", fetcher, {
     refreshInterval: 5000, // auto-refresh every 5s
   });
-  
+
   const { data: jobs, error: jobsError, mutate: mutateJobs } = useSWR(
     "/api/jobs",
     fetcher,
@@ -90,121 +91,142 @@ export default function UserDashboard() {
 
   return (
     <Box sx={{ mx: 4, mt: 3 }}>
-{/* Run Script Form */}
-<Card sx={{ borderRadius: 3, boxShadow: 4, mb: 4 }}>
-  <CardHeader title="Run Script" titleTypographyProps={{ variant: "h5" }} />
-  <form onSubmit={submitJob}>
-    <CardContent
-      sx={{
-        display: "flex",
-        gap: 2,
-        alignItems: "center",
-        flexWrap: "nowrap",
-      }}
-    >
-      {/* Machine selector */}
-      <Autocomplete
-        sx={{ flex: 1 }}
-        options={user?.machines || []}
-        getOptionLabel={(m: any) => m.hostname || m.id}
-        value={user?.machines?.find((m: any) => m.id === machine) || null}
-        onChange={(_, newValue) => {
-          setMachine(newValue ? newValue.id : null);
-          setScriptId(
-            newValue?.scripts?.length ? newValue.scripts[0].id : null
-          );
-        }}
-        renderInput={(params) => (
-          <TextField {...params} label="Select Machine" size="small" fullWidth />
-        )}
-      />
-
-      {/* Script selector */}
-      <Autocomplete
-        sx={{ flex: 1 }}
-        options={availableScripts}
-        getOptionLabel={(s: any) => s.filename}
-        value={availableScripts.find((s: any) => s.id === scriptId) || null}
-        onChange={(_, newValue) => setScriptId(newValue ? newValue.id : null)}
-        renderInput={(params) => (
-          <TextField {...params} label="Select Script" size="small" fullWidth />
-        )}
-        disabled={!machine}
-      />
-
-      {/* Run button */}
-      <Button
-        type="submit"
-        variant="contained"
-        color="primary"
-        sx={{ flex: 0.5, borderRadius: 2, height: "40px" }}
-      >
-        Run
-      </Button>
-
-      {/* Help button */}
-      <IconButton
-        color="info"
-        onClick={() => setHelpOpen(true)}
-        sx={{ border: "1px solid #ccc", borderRadius: 2 }}
-      >
-        <HelpOutlineIcon />
-      </IconButton>
-    </CardContent>
-  </form>
-</Card>
-
-{/* Documentation Dialog */}
-<Dialog open={helpOpen} onClose={() => setHelpOpen(false)} maxWidth="md" fullWidth>
-  <DialogTitle>User Guide: Running Scripts</DialogTitle>
-  <DialogContent dividers>
-    <Grid container spacing={2} alignItems="flex-start">
-      {/* Left side: instructions */}
-      <Grid item xs={12} md={12}>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Follow these steps to run a script:
-        </Typography>
-        <ol style={{ margin: 0, paddingLeft: "1.2rem", color: "#555", lineHeight: 1.7 }}>
-          <li>In the <b>Run Scripts</b> panel:
-            <ul>
-              <li>1: Select your <b>machine</b> from the first dropdown.</li>
-              <li>2: Choose a <b>script</b> from the second dropdown.</li>
-              <li>3: Click <b>Run</b> to submit the job.</li>
-              <li>4: Your request will show as <b>Pending</b> in the table below.</li>
-              <li>5: If the machine is online, it will execute the script. The <b>Output</b> column shows the result.</li>
-            </ul>
-          </li>
-        </ol>
-      </Grid>
-
-      {/* Right side: screenshot */}
-      <Grid item xs={12} md={12}>
-        <Box sx={{ textAlign: "center" }}>
-          <Image
-            src="/run-script.png"
-            alt="Run Scripts panel screenshot"
-            width={808}
-            height={300}
-            style={{
-              borderRadius: "8px",
-              border: "1px solid #ddd",
-              maxWidth: "100%",
-              height: "auto",
+      {/* Run Script Form */}
+      <Card sx={{ borderRadius: 3, boxShadow: 4, mb: 4 }}>
+        <CardHeader title="Run Script" titleTypographyProps={{ variant: "h5" }} />
+        <form onSubmit={submitJob}>
+          <CardContent
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: "center",
+              flexWrap: "nowrap",
             }}
-          />
-          <Typography variant="caption" color="text.secondary">
-            Example of the "Run Scripts" panel
-          </Typography>
-        </Box>
-      </Grid>
-    </Grid>
-  </DialogContent>
-  <DialogActions>
-    <Button onClick={() => setHelpOpen(false)} variant="contained" color="primary">
-      Close
-    </Button>
-  </DialogActions>
-</Dialog>
+          >
+            {/* Machine selector */}
+            <Autocomplete
+              sx={{ flex: 1 }}
+              options={user?.machines || []}
+              getOptionLabel={(m: any) => m.hostname || m.id}
+              value={user?.machines?.find((m: any) => m.id === machine) || null}
+              onChange={(_, newValue) => {
+                setMachine(newValue ? newValue.id : null);
+                setScriptId(
+                  newValue?.scripts?.length ? newValue.scripts[0].id : null
+                );
+              }}
+              renderInput={(params) => (
+                <TextField {...params} label="Select Machine" size="small" fullWidth />
+              )}
+            />
+
+            {/* Script selector */}
+            <Autocomplete
+              sx={{ flex: 1 }}
+              options={availableScripts}
+              getOptionLabel={(s: any) => s.filename}
+              value={availableScripts.find((s: any) => s.id === scriptId) || null}
+              onChange={(_, newValue) => setScriptId(newValue ? newValue.id : null)}
+              renderInput={(params) => (
+                <TextField {...params} label="Select Script" size="small" fullWidth />
+              )}
+              disabled={!machine}
+            />
+
+            {/* Run button */}
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              sx={{ flex: 0.5, borderRadius: 2, height: "40px" }}
+            >
+              Run
+            </Button>
+
+            {/* Help button */}
+            <IconButton
+              color="info"
+              onClick={() => setHelpOpen(true)}
+              sx={{ border: "1px solid #ccc", borderRadius: 2 }}
+            >
+              <HelpOutlineIcon />
+            </IconButton>
+          </CardContent>
+        </form>
+      </Card>
+
+      {/* Documentation Dialog */}
+      <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} maxWidth="xl" fullWidth>
+        <DialogTitle> <TerminalIcon color="action" /> User Guide: Running Scripts</DialogTitle>
+        <DialogContent dividers>
+           <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: { xs: "column", md: "row" },
+                  gap: 2,
+                  alignItems: "flex-start",
+                }}
+              >
+                {/* Left side: instructions */}
+                <Box sx={{}}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    Follow these simple steps to run a script on your assigned
+                    machine:
+                  </Typography>
+
+                  <ul>
+                    <li>
+                      1: Select your <b>machine</b> from the first dropdown
+                      (autocomplete makes it easy to find).
+                    </li>
+                    <li>
+                      2: Choose a <b>script</b> from the second dropdown that
+                      appears.
+                    </li>
+                    <li>3: Click the <b>Run</b> button to submit the job.</li>
+                    <li>
+                      4: Your request will appear in the table below as{" "}
+                      <b>Pending</b>.
+                    </li>
+                    <li>
+                      5: If the machine is online, it will run the script. Once
+                      finished, the <b>Output</b> column will show whether it
+                      succeeded or failed.
+                    </li>
+                  </ul>
+                </Box>
+
+                {/* Right side: screenshot */}
+                <Box sx={{ flex: 1, textAlign: "center" }}>
+                  <Image
+                    src="/run-script.png"
+                    alt="Run Scripts panel screenshot"
+                    width={800}
+                    height={300}
+                    style={{
+                      borderRadius: "8px",
+                      border: "1px solid #ddd",
+                      maxWidth: "100%",
+                      height: "auto",
+                    }}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Example of the "Run Scripts" panel with machine and script
+                    selection
+                  </Typography>
+                </Box>
+              </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setHelpOpen(false)} variant="contained" color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Jobs Table */}
       <JobsTable jobs={jobsData || []} />

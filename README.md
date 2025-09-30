@@ -20,12 +20,8 @@ The platform offers:
   sudo ./register.sh
   ```
 - **User & Machine Management**  
-  Admins can create user accounts and assign one or more machines to them. Users will only see their assigned machines in the dashboard.  
+  Admins can create user accounts and assign one or more machines to them. Users will only see their assigned machines in the dashboard. All `.sh` files in `/home/xyz/` on a registered machine are exposed as clickable buttons in the UI. Users confirm before execution, ensuring safety.  
 
-- **Script Execution**  
-  All `.sh` files in `/home/xyz/` on a registered machine are exposed as clickable buttons in the UI. Users confirm before execution, ensuring safety.  
-
-  ![Run Script Panel](public/run-script.png)
 
 - **Job Queue**  
   When a user runs a script:
@@ -33,6 +29,7 @@ The platform offers:
   2. Each machine runs an agent that polls the queue for jobs assigned to it.
   3. If the machine is online, it picks up the job, executes the script, and sends back results.
   4. The dashboard updates the job status to **Success** or **Failed**, with logs visible in the output column.
+  ![Run Script Panel](public/run-script.png)
 
 - **Statuses & Colors**  
 

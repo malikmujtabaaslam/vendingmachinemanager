@@ -30,8 +30,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Toolbar sx={{ justifyContent: "space-between" }}>
 
             {/* Right side: Email + Logout */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              
+            {/* Right side: Email + Logout */}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, ml: "auto" }}>
               {userEmail && (
                 <Typography
                   variant="body2"
@@ -55,6 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </IconButton>
               </Tooltip>
             </Box>
+
           </Toolbar>
         </AppBar>
 

@@ -12,7 +12,6 @@ export async function GET(req: Request) {
 
   const unassignedAgents = await prisma.agent.findMany({
     where: { ownerId: null },
-    select: { id: true, hostname: true },
   });
 
   return NextResponse.json({ agents: unassignedAgents });

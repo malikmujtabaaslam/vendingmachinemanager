@@ -1,22 +1,31 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Button,
-  Select,
-  MenuItem,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Chip,
   Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
 } from "@mui/material";
 import CircleIcon from "@mui/icons-material/Circle";
+import SettingsIcon from "@mui/icons-material/Settings";
+import KeyIcon from "@mui/icons-material/Key";
+import DeleteIcon from "@mui/icons-material/Delete";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  ColumnDef,
+  flexRender,
+} from "@tanstack/react-table";
 
 interface User {
   id: string;
@@ -35,7 +44,7 @@ interface User {
         stdout: string | null;
         stderr: string | null;
         exitCode: number | null;
-        createdAt: string;      // ISO string
+        createdAt: string;
         completedAt: string | null;
       } | null;
     }[];
@@ -48,299 +57,302 @@ interface Agent {
 }
 
 interface UsersTableProps {
-  editable?: boolean; // default true
+  editable?: boolean;
 }
 
+// determine script chip color
+const getScriptColor = (script: any) => {
+  const job = script.lastJob;
+  if (!job) return "default";
+  if (job.pending) return "secondary";
+  if (!job.pending && !job.completedAt) return "primary";
+  if (job.completedAt && job.stderr) return "error";
+  if (job.completedAt && job.stdout) return "success";
+  return "default";
+};
+
 export default function UsersTable({ editable = true }: UsersTableProps) {
-  const [assigningUser, setAssigningUser] = useState<User | null>(null);
-  const [selectedMachine, setSelectedMachine] = useState("");
-  const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
   const [users, setUsers] = useState<User[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [assigningUser, setAssigningUser] = useState<User | null>(null);
+  const [selectedMachine, setSelectedMachine] = useState("");
+  const [searchEmail, setSearchEmail] = useState(""); // search by email
+  const [machineFilter, setMachineFilter] = useState<"ALL" | "ONLINE" | "OFFLINE">("ALL"); // filter by machine status
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
 
+  // fetch users & unassigned machines every 10 seconds
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchUsers();
-      fetchUnassignedMachines();
-    }, 5000); // refresh every second
-
+    fetchData();
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, []);
 
+  async function fetchData() {
+    await Promise.all([fetchUsers(), fetchUnassignedMachines()]);
+    setLoading(false);
+  }
+
   async function fetchUsers() {
     try {
-      const res = await fetch("/api/users", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch("/api/users", { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
-      setUsers(data.users.filter((u: User) => u.role === "user") || []);
-      console.log("Fetched Users:", data.users);
+      setUsers((data.users.filter((u: User) => u.role === "user") || []).reverse());
     } catch (err) {
-      console.error("Error fetching users:", err);
+      console.error(err);
     }
   }
 
   async function fetchUnassignedMachines() {
     try {
-      const res = await fetch("/api/machines/unassigned", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch("/api/machines/unassigned", { headers: { Authorization: `Bearer ${token}` } });
       const data = await res.json();
       setAgents(data.agents || []);
     } catch (err) {
-      console.error("Error fetching unassigned machines:", err);
+      console.error(err);
     }
   }
 
-  // Assign machine to user
+  // assign machine
   async function handleAssignMachine() {
     if (!assigningUser || !selectedMachine) return;
     try {
       const res = await fetch("/api/machines/assign", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          agentId: selectedMachine,
-          userId: assigningUser.id,
-        }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ agentId: selectedMachine, userId: assigningUser.id }),
       });
-
       if (res.ok) {
         setAssigningUser(null);
         setSelectedMachine("");
-        fetchUsers();
-        fetchUnassignedMachines();
+        fetchData();
       } else {
-        const data = await res.json();
-        console.error("Assign machine failed:", data);
+        console.error(await res.json());
       }
     } catch (err) {
       console.error(err);
     }
   }
 
-  // Remove assigned machine
+  // remove assigned machine
   async function handleRemoveMachine(agentId: string) {
     try {
-      const res = await fetch(`/api/machines/unassign`, {
+      const res = await fetch("/api/machines/unassign", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ agentId }),
       });
-      if (!res.ok) {
-        const data = await res.json();
-        console.error("Unassign failed:", data);
-      }else{
-        alert("Machine removed successfully!");
-        fetchUsers();
-        fetchUnassignedMachines();
-      }
+      if (res.ok) fetchData();
     } catch (err) {
       console.error(err);
     }
   }
+
+  // change user password
   async function handleChangePassword(user: User) {
     const newPassword = prompt(`Enter new password for ${user.email}`);
     if (!newPassword) return;
-
     try {
       const res = await fetch(`/api/users/${user.id}/change-password`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userId: user.id ,password: newPassword }),
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: user.id, password: newPassword }),
       });
-      if (res.ok) {
-        alert("Password changed successfully!");
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to change password");
-      }
+      if (!res.ok) alert("Failed to change password");
+      else alert("Password changed!");
     } catch (err) {
       console.error(err);
-      alert("Error changing password");
     }
   }
 
+  // remove user
   async function handleRemoveUser(user: User) {
-    if (!confirm(`Are you sure you want to remove ${user.email}?`)) return;
-
+    if (!confirm(`Remove ${user.email}?`)) return;
     try {
-      const res = await fetch(`/api/users/${user.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        fetchUsers();
-        fetchUnassignedMachines();
-        alert("User removed successfully!");
-      } else {
-        const data = await res.json();
-        alert(data.error || "Failed to remove user");
-      }
+      const res = await fetch(`/api/users/${user.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) fetchData();
     } catch (err) {
       console.error(err);
-      alert("Error removing user");
     }
   }
-  function getScriptColor(script: any) {
-    const job = script.lastJob;
-    if (!job) return "default";
 
-    if (job.pending) return "secondary"; // still pending
-    if (!job.pending && !job.completedAt) return "primary"; // running
-    if (job.completedAt && job.stderr) return "error"; // failed
-    if (job.completedAt && job.stdout) return "success"; // succeeded
-    return "default";
-  }
+  // flatten data for TanStack Table and apply search + filter
+  const data = useMemo(() => {
+    return users.flatMap((user) => {
+      if (user.machines.length === 0) {
+        if (!user.email.toLowerCase().includes(searchEmail.toLowerCase())) return [];
+        return [{ ...user, machine: null, scripts: [] }];
+      }
+
+      return user.machines
+        .filter((m) => {
+          if (!user.email.toLowerCase().includes(searchEmail.toLowerCase())) return false;
+          if (machineFilter === "ALL") return true;
+          return machineFilter === "ONLINE" ? m.isonline : !m.isonline;
+        })
+        .map((m) => ({ ...user, machine: m, scripts: m.scripts }));
+    });
+  }, [users, searchEmail, machineFilter]);
+
+  const columns = useMemo<ColumnDef<any>[]>(
+    () => [
+      { accessorKey: "email", header: "Email" },
+      {
+        accessorKey: "machine.hostname",
+        header: "Machine",
+        cell: (info) =>
+          info.row.original.machine ? (
+            editable ? (
+              <Chip
+                label={info.getValue()}
+                color={info.row.original.machine.isonline ? "success" : "error"}
+                onDelete={() => {
+                  if (confirm(`Are you sure you want to unassign ${info.getValue()}?`)) {
+                    handleRemoveMachine(info.row.original.machine.id);
+                  }
+                }}
+              />
+            ) : (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <CircleIcon
+                  fontSize="small"
+                  sx={{ color: info.row.original.machine.isonline ? "green" : "red" }}
+                />
+                {info.getValue()}
+              </Box>
+            )
+          ) : "-",
+      },
+      {
+        accessorKey: "scripts",
+        header: "Scripts",
+        cell: (info) =>
+          info.getValue()?.length ? (
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+              {info.getValue().map((s: any) => (
+                <Chip key={s.id} label={s.filename.replace(/\.[^/.]+$/, "")} color={getScriptColor(s)} variant="outlined" />
+              ))}
+            </Box>
+          ) : "-",
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: (info) =>
+          editable ? (
+            <Box sx={{ display: "flex", gap: 0.5 }}>
+              <IconButton size="small" color="primary" onClick={() => setAssigningUser(info.row.original)}>
+                <SettingsIcon />
+              </IconButton>
+              <IconButton size="small" color="secondary" onClick={() => handleChangePassword(info.row.original)}>
+                <KeyIcon />
+              </IconButton>
+              <IconButton size="small" color="error" onClick={() => handleRemoveUser(info.row.original)}>
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          ) : null,
+      },
+    ],
+    [editable]
+  );
+
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
   return (
     <>
-      <Table>
-      <TableHead>
-        <TableRow>
-          <TableCell>Email</TableCell>
-          <TableCell>Machine</TableCell>
-          <TableCell>Scripts</TableCell>
-          {editable && <TableCell>Actions</TableCell>}
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {users.map((user) =>
-          user.machines.length ? (
-            user.machines.map((machine, idx) => (
-              <TableRow key={machine.id}>
-                {/* Show email only on first row of each user */}
-                {idx === 0 && (
-                  <TableCell rowSpan={user.machines.length}>
-                    {user.email}
-                  </TableCell>
-                )}
+      {/* Search + Filter */}
+      <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
+        <TextField
+          size="small"
+          placeholder="Search by email"
+          value={searchEmail}
+          onChange={(e) => setSearchEmail(e.target.value)}
+        />
+        <Select size="small" value={machineFilter} onChange={(e) => setMachineFilter(e.target.value as any)}>
+          <MenuItem value="ALL">All Machines</MenuItem>
+          <MenuItem value="ONLINE">Online</MenuItem>
+          <MenuItem value="OFFLINE">Offline</MenuItem>
+        </Select>
+      </Box>
 
-                <TableCell>
-                  {editable ? (
-                    <Chip
-                      color = {machine.isonline ? "success" : "error"}
-                      label={machine.hostname}
-                      onDelete={() => handleRemoveMachine(machine.id)}
-                    />
-                  ) : (
-                    <>
-                      <CircleIcon
-                        sx={{
-                          fontSize: 12,
-                          color: machine.isonline ? "green" : "red",
+      {/* Table */}
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Box sx={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      style={{ paddingLeft: "16px", paddingRight: "16px", textAlign: "left" }}
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length} style={{ textAlign: "center", padding: "8px 16px" }}>
+                    No users found.
+                  </td>
+                </tr>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <tr key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        style={{
+                          paddingLeft: "16px",
+                          paddingRight: "16px",
+                          paddingTop: "4px",
+                          paddingBottom: "4px",
                         }}
-                      />
-                      {machine.hostname}
-                    </>
-                  )}
-                </TableCell>
-
-                <TableCell>
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                    {machine.scripts.length ? (
-                      machine.scripts.map((s: any) => (
-                        <Chip
-                          key={s.id}
-                          label={s.filename.replace(/\.[^/.]+$/, "")} // remove extension
-                          color={getScriptColor(s)}
-                          variant="outlined"
-                        />
-                      ))
-                    ) : (
-                      "-"
-                    )}
-                  </Box>
-                </TableCell>
-
-                {editable && idx === 0 && (
-                  <TableCell rowSpan={user.machines.length}>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => setAssigningUser(user)}
-                      sx={{ mr: 1 }}
-                    >
-                      Assign Machine
-                    </Button>
-                    <Button
-                      color="secondary"
-                      variant="outlined"
-                      size="small"
-                      onClick={() => handleChangePassword(user)}
-                      sx={{ mr: 1 }}
-                    >
-                      Change Password
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      color="error"
-                      onClick={() => handleRemoveUser(user)}
-                    >
-                      Remove User
-                    </Button>
-                  </TableCell>
-                )}
-              </TableRow>
-            ))
-          ) : (
-            <TableRow key={user.id}>
-              <TableCell>{user.email}</TableCell>
-              <TableCell>-</TableCell>
-              <TableCell>-</TableCell>
-              {editable && (
-                <TableCell>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => setAssigningUser(user)}
-                    sx={{ mr: 1 }}
-                  >
-                    Assign Machine
-                  </Button>
-                  <Button
-                    color="secondary"
-                    variant="outlined"
-                    size="small"
-                    onClick={() => handleChangePassword(user)}
-                    sx={{ mr: 1 }}
-                  >
-                    Change Password
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    color="error"
-                    onClick={() => handleRemoveUser(user)}
-                  >
-                    Remove User
-                  </Button>
-                </TableCell>
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))
               )}
-            </TableRow>
-          )
-        )}
-      </TableBody>
-    </Table>
+            </tbody>
+          </table>
 
+          {/* Pagination */}
+          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+            <Button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+              Previous
+            </Button>
+            <Typography>
+              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+            </Typography>
+            <Button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+              Next
+            </Button>
+          </Box>
+        </Box>
+      )}
+
+      {/* Assign Machine Dialog */}
       {editable && (
         <Dialog open={!!assigningUser} onClose={() => setAssigningUser(null)}>
           <DialogTitle>Assign Machine to {assigningUser?.email}</DialogTitle>
           <DialogContent>
-            <Select
-              fullWidth
-              value={selectedMachine}
-              onChange={(e) => setSelectedMachine(e.target.value)}
-            >
+            <Select fullWidth value={selectedMachine} onChange={(e) => setSelectedMachine(e.target.value)}>
               {agents.map((agent) => (
                 <MenuItem key={agent.id} value={agent.id}>
                   {agent.hostname}

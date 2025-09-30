@@ -1,156 +1,308 @@
 "use client";
 import useSWR from "swr";
+import { useMemo, useState } from "react";
 import {
-  Grid,
   Card,
   CardContent,
-  Typography,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  Box,
   CardHeader,
+  Box,
+  Typography,
+  TextField,
+  Select,
+  MenuItem,
+  CircularProgress,
   Chip,
 } from "@mui/material";
+import { useReactTable, getCoreRowModel, getPaginationRowModel, ColumnDef, flexRender } from "@tanstack/react-table";
 import UsersTable from "../../components/UsersTable";
-import DownloadIcon from '@mui/icons-material/Download';
-import DescriptionIcon from '@mui/icons-material/Description';
 
 const fetcher = (url: string) =>
   fetch(url, {
     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
   }).then((res) => res.json());
 
+// Format relative time
+function formatTime(timestamp: string | null) {
+  if (!timestamp) return "-";
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const seconds = Math.floor(diff / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(seconds / 3600);
+
+  if (seconds < 60) return `${seconds} sec ago`;
+  if (minutes < 60) return `${minutes} min ${seconds % 60} sec ago`;
+  if (hours < 24)
+    return `${hours} hr ${minutes % 60} min ${seconds % 60} sec ago`;
+  return date.toLocaleString();
+}
+
+const statusColors: Record<string, string> = {
+  PENDING: "#ff9800",
+  RUNNING: "#2196f3",
+  FAILED: "#f44336",
+  DONE: "#4caf50",
+};
+
 export default function AdminDashboard() {
-  const { data: jobs } = useSWR("/api/jobs", fetcher);
-  const { data: agents } = useSWR("/api/machines/unassigned", fetcher);
+  const { data: jobs, isLoading: jobsLoading } = useSWR("/api/jobs", fetcher);
+  const { data: agents, isLoading: agentsLoading } = useSWR("/api/machines/unassigned", fetcher);
 
-  const jobsList = jobs || [];
-  const unassignedAgents = agents?.agents || [];
+  const [jobSearch, setJobSearch] = useState("");
+  const [jobStatusFilter, setJobStatusFilter] = useState("ALL");
 
-  function renderJobStatus(job: any) {
-    if (job.pending) return <Chip label="⏳ Pending" color="warning" size="small" />;
-    if (!job.pending && job.stderr) return <Chip label="❌ Failed" color="error" size="small" />;
-    if (!job.pending && job.stdout) return <Chip label="✅ Done" color="success" size="small" />;
-    return <Chip label="Unknown" variant="outlined" size="small" />;
-  }
+  // Prepare jobs data with status
+  const jobsData = useMemo(() => {
+    if (!jobs) return [];
+    return jobs
+      .map((job: any) => {
+        let status = "DONE";
+        if (job.pending) status = "PENDING";
+        else if (!job.pending && !job.completedAt) status = "RUNNING";
+        else if (job.completedAt && job.stderr) status = "FAILED";
+        return { ...job, status };
+      })
+      .filter((job: any) => {
+        const searchMatch =
+          job.agent?.hostname?.toLowerCase().includes(jobSearch.toLowerCase()) ||
+          job.script?.filename?.toLowerCase().includes(jobSearch.toLowerCase());
+        const statusMatch = jobStatusFilter === "ALL" || job.status === jobStatusFilter;
+        return searchMatch && statusMatch;
+      });
+  }, [jobs, jobSearch, jobStatusFilter]);
+
+  // Prepare unassigned agents
+  const unassignedAgents = useMemo(() => {
+    if (!agents?.agents) return [];
+    const ONLINE_INTERVAL = parseInt(process.env.ONLINE_INTERVAL || "10");
+    const now = new Date().getTime();
+    return agents.agents.map((agent: any) => ({
+      ...agent,
+      online: (now - new Date(agent.updatedAt).getTime()) / 1000 < ONLINE_INTERVAL,
+    }));
+  }, [agents]);
+
+  // Define columns for Jobs
+  const jobsColumns = useMemo<ColumnDef<any>[]>(
+    () => [
+      { accessorKey: "id", header: "ID" },
+      { accessorKey: "user.email", header: "User" },
+      { accessorKey: "agent.hostname", header: "Agent" },
+      {
+        accessorKey: "script.filename",
+        header: "Script",
+        cell: (info) => <code>{info.getValue()?.replace(/\.[^/.]+$/, "")}</code>,
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: (info) => (
+          <Typography sx={{ fontWeight: 700, color: statusColors[info.getValue()], fontSize: "0.85rem" }}>
+            {info.getValue()}
+          </Typography>
+        ),
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Created",
+        cell: (info) => formatTime(info.getValue()),
+      },
+      {
+        accessorKey: "completedAt",
+        header: "Completed",
+        cell: (info) => formatTime(info.getValue()),
+      },
+    ],
+    []
+  );
+
+  const jobsTable = useReactTable({
+    data: jobsData,
+    columns: jobsColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  // Columns for Unassigned Machines
+  const agentsColumns = useMemo<ColumnDef<any>[]>(
+    () => [
+      { accessorKey: "hostname", header: "Hostname" },
+      { accessorKey: "createdAt", header: "Registered At", cell: (info) => formatTime(info.getValue()) },
+      {
+        accessorKey: "online",
+        header: "Status",
+        cell: (info) => (
+          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span
+              style={{
+                display: "inline-block",
+                width: "10px",
+                height: "10px",
+                borderRadius: "50%",
+                backgroundColor: info.getValue() ? "green" : "red",
+              }}
+            ></span>
+            {info.getValue() ? "Online" : "Offline"}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
+  const agentsTable = useReactTable({
+    data: unassignedAgents,
+    columns: agentsColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
 
   return (
     <Box sx={{ p: { xs: 1, md: 3 } }}>
-      <Typography
-        variant="h4"
-        sx={{ mb: 3, fontWeight: 700, color: "primary.main" }}
-      >
+      <Typography variant="h5" sx={{ mb: 3, fontWeight: 700, color: "primary.main", textTransform: "uppercase" }}>
         Admin Dashboard
       </Typography>
-      <Grid container spacing={3}>
-        {/* Jobs Table */}
-        <Card sx={{ boxShadow: 3, borderRadius: 2, mb: 3 }}>
+
+      {/* Jobs + Unassigned Machines */}
+      <Box sx={{ display: "flex", gap: 3, mb: 3 }}>
+        {/* Jobs Table 70% */}
+        <Card sx={{ flex: 7, borderRadius: 3, boxShadow: 4 }}>
+          <CardHeader title="All Jobs" titleTypographyProps={{ variant: "h6" }} />
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-              All Jobs
-            </Typography>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>ID</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Agent</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Script</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {Array.isArray(jobsList) && jobsList.length > 0 ? (
-                  jobsList.map((job: any) => (
-                    <TableRow key={job.id}>
-                      <TableCell>{job.id}</TableCell>
-                      <TableCell>{job.user?.email}</TableCell>
-                      <TableCell>{job.agent?.hostname}</TableCell>
-                      <TableCell>
-                        <code style={{ fontSize: "0.95em" }}>
-                          {job.script?.filename
-                            ? job.script.filename.replace(/\.[^/.]+$/, "")
-                            : "N/A"}
-                        </code>
-                      </TableCell>
-                      <TableCell>{renderJobStatus(job)}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5}>No jobs found.</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+              <TextField
+                placeholder="Search Machine/Script"
+                size="small"
+                sx={{ flex: 1 }}
+                value={jobSearch}
+                onChange={(e) => setJobSearch(e.target.value)}
+              />
+              <Select
+                size="small"
+                value={jobStatusFilter}
+                onChange={(e) => setJobStatusFilter(e.target.value)}
+              >
+                <MenuItem value="ALL">All</MenuItem>
+                <MenuItem value="PENDING">Pending</MenuItem>
+                <MenuItem value="RUNNING">Running</MenuItem>
+                <MenuItem value="FAILED">Failed</MenuItem>
+                <MenuItem value="DONE">Done</MenuItem>
+              </Select>
+            </Box>
+
+            {jobsLoading ? (
+              <Box sx={{ textAlign: "center", py: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Box sx={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    {jobsTable.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody>
+                    {jobsTable.getRowModel().rows.length === 0 ? (
+                      <tr>
+                        <td colSpan={jobsColumns.length}>No jobs found.</td>
+                      </tr>
+                    ) : (
+                      jobsTable.getRowModel().rows.map((row) => (
+                        <tr key={row.id}>
+                          {row.getVisibleCells().map((cell) => (
+                            <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+
+                {/* Pagination */}
+                <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+                  <button onClick={() => jobsTable.previousPage()} disabled={!jobsTable.getCanPreviousPage()}>
+                    Previous
+                  </button>
+                  <span>
+                    Page {jobsTable.getState().pagination.pageIndex + 1} of {jobsTable.getPageCount()}
+                  </span>
+                  <button onClick={() => jobsTable.nextPage()} disabled={!jobsTable.getCanNextPage()}>
+                    Next
+                  </button>
+                </Box>
+              </Box>
+            )}
           </CardContent>
         </Card>
 
-        {/* Unassigned Agents Table */}
-        <Card sx={{ boxShadow: 3, borderRadius: 2, mb: 3 }}>
-          <CardHeader
-            title="Unassigned Machines"
-            titleTypographyProps={{ variant: "h6" }}
-          />
+        {/* Unassigned Machines Table 30% */}
+        <Card sx={{ flex: 3, borderRadius: 3, boxShadow: 4 }}>
+          <CardHeader title="Unassigned Machines" titleTypographyProps={{ variant: "h6" }} />
           <CardContent>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 600 }}>Agent ID</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Hostname</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {unassignedAgents.length > 0 ? (
-                  unassignedAgents.map((agent: any) => {
-                    const now = new Date();
-                    const ONLINE_INTERVAL = parseInt(
-                      process.env.ONLINE_INTERVAL || "5"
-                    ); // seconds
-                    const isOnline =
-                      (now.getTime() - new Date(agent.updatedAt).getTime()) / 1000 <
-                      ONLINE_INTERVAL;
+            {agentsLoading ? (
+              <Box sx={{ textAlign: "center", py: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <Box sx={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    {agentsTable.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody>
+                    {agentsTable.getRowModel().rows.length === 0 ? (
+                      <tr>
+                        <td colSpan={agentsColumns.length}>No unassigned machines found.</td>
+                      </tr>
+                    ) : (
+                      agentsTable.getRowModel().rows.map((row) => (
+                        <tr key={row.id}>
+                          {row.getVisibleCells().map((cell) => (
+                            <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                          ))}
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
 
-                    return (
-                      <TableRow key={agent.id}>
-                        <TableCell>
-                          <span
-                            style={{
-                              display: "inline-block",
-                              width: "10px",
-                              height: "10px",
-                              marginRight: "8px",
-                              borderRadius: "50%",
-                              backgroundColor: isOnline ? "green" : "red",
-                            }}
-                          ></span>
-                          {agent.id}
-                        </TableCell>
-                        <TableCell>{agent.hostname}</TableCell>
-                      </TableRow>
-                    );
-                  })
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={3}>No unassigned machines found.</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                {/* Pagination */}
+                <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+                  <button onClick={() => agentsTable.previousPage()} disabled={!agentsTable.getCanPreviousPage()}>
+                    Previous
+                  </button>
+                  <span>
+                    Page {agentsTable.getState().pagination.pageIndex + 1} of {agentsTable.getPageCount()}
+                  </span>
+                  <button onClick={() => agentsTable.nextPage()} disabled={!agentsTable.getCanNextPage()}>
+                    Next
+                  </button>
+                </Box>
+              </Box>
+            )}
           </CardContent>
         </Card>
+      </Box>
 
-        {/* Users Table */}
-        <Card sx={{ boxShadow: 4, borderRadius: 3 }}>
-          <CardHeader title="Users" titleTypographyProps={{ variant: "h5" }} />
-          <CardContent>
-            <UsersTable editable={false} />
-          </CardContent>
-        </Card>
-      </Grid>
+      {/* Users Table Full Width */}
+      <Card sx={{ boxShadow: 4, borderRadius: 3 }}>
+        <CardHeader title="Users" titleTypographyProps={{ variant: "h5" }} />
+        <CardContent>
+          <UsersTable editable={false} />
+        </CardContent>
+      </Card>
     </Box>
   );
 }

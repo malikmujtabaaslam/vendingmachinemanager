@@ -28,10 +28,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Top Header */}
         <AppBar position="static" color="primary" elevation={1} sx={{ zIndex: 1201 }}>
           <Toolbar sx={{ justifyContent: "space-between" }}>
-            {/* Left side: Title */}
-            <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-              Dashboard
-            </Typography>
 
             {/* Right side: Email + Logout */}
             <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>

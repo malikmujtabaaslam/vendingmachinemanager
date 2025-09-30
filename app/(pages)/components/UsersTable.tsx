@@ -27,28 +27,35 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 
+// ---------------- Types ----------------
+interface LastJob {
+  id: number;
+  pending: boolean;
+  stdout: string | null;
+  stderr: string | null;
+  exitCode: number | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+interface Script {
+  id: string;
+  filename: string;
+  lastJob: LastJob | null;
+}
+
+interface Machine {
+  id: string;
+  hostname: string;
+  isonline: boolean;
+  scripts: Script[];
+}
+
 interface User {
   id: string;
   email: string;
   role: "user" | "admin";
-  machines: {
-    id: string;
-    hostname: string;
-    isonline: boolean;
-    scripts: {
-      id: string;
-      filename: string;
-      lastJob: {
-        id: number;
-        pending: boolean;
-        stdout: string | null;
-        stderr: string | null;
-        exitCode: number | null;
-        createdAt: string;
-        completedAt: string | null;
-      } | null;
-    }[];
-  }[];
+  machines: Machine[];
 }
 
 interface Agent {
@@ -56,12 +63,17 @@ interface Agent {
   hostname: string;
 }
 
+interface UserRow extends User {
+  machine: Machine | null;
+  scripts: Script[];
+}
+
 interface UsersTableProps {
   editable?: boolean;
 }
 
-// determine script chip color
-const getScriptColor = (script: any) => {
+// ---------------- Utils ----------------
+const getScriptColor = (script: Script) => {
   const job = script.lastJob;
   if (!job) return "default";
   if (job.pending) return "secondary";
@@ -71,17 +83,18 @@ const getScriptColor = (script: any) => {
   return "default";
 };
 
+// ---------------- Component ----------------
 export default function UsersTable({ editable = true }: UsersTableProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [assigningUser, setAssigningUser] = useState<User | null>(null);
+  const [assigningUser, setAssigningUser] = useState<UserRow | null>(null);
   const [selectedMachine, setSelectedMachine] = useState("");
-  const [searchEmail, setSearchEmail] = useState(""); // search by email
-  const [machineFilter, setMachineFilter] = useState<"ALL" | "ONLINE" | "OFFLINE">("ALL"); // filter by machine status
+  const [searchEmail, setSearchEmail] = useState("");
+  const [machineFilter, setMachineFilter] = useState<"ALL" | "ONLINE" | "OFFLINE">("ALL");
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
 
-  // fetch users & unassigned machines every 10 seconds
+  // ---------------- Fetch Data ----------------
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 10000);
@@ -113,7 +126,7 @@ export default function UsersTable({ editable = true }: UsersTableProps) {
     }
   }
 
-  // assign machine
+  // ---------------- Actions ----------------
   async function handleAssignMachine() {
     if (!assigningUser || !selectedMachine) return;
     try {
@@ -134,7 +147,6 @@ export default function UsersTable({ editable = true }: UsersTableProps) {
     }
   }
 
-  // remove assigned machine
   async function handleRemoveMachine(agentId: string) {
     try {
       const res = await fetch("/api/machines/unassign", {
@@ -148,8 +160,7 @@ export default function UsersTable({ editable = true }: UsersTableProps) {
     }
   }
 
-  // change user password
-  async function handleChangePassword(user: User) {
+  async function handleChangePassword(user: UserRow) {
     const newPassword = prompt(`Enter new password for ${user.email}`);
     if (!newPassword) return;
     try {
@@ -165,8 +176,7 @@ export default function UsersTable({ editable = true }: UsersTableProps) {
     }
   }
 
-  // remove user
-  async function handleRemoveUser(user: User) {
+  async function handleRemoveUser(user: UserRow) {
     if (!confirm(`Remove ${user.email}?`)) return;
     try {
       const res = await fetch(`/api/users/${user.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
@@ -176,64 +186,81 @@ export default function UsersTable({ editable = true }: UsersTableProps) {
     }
   }
 
-  // flatten data for TanStack Table and apply search + filter
-  const data = useMemo(() => {
+  // ---------------- Flatten Data ----------------
+  const data: UserRow[] = useMemo(() => {
     return users.flatMap((user) => {
+      // No machines assigned
       if (user.machines.length === 0) {
         if (!user.email.toLowerCase().includes(searchEmail.toLowerCase())) return [];
-        return [{ ...user, machine: null, scripts: [] }];
+        return [
+          {
+            ...user,
+            machine: null,
+            scripts: [],
+          } as UserRow,
+        ];
       }
 
+      // Flatten each machine into a UserRow
       return user.machines
         .filter((m) => {
           if (!user.email.toLowerCase().includes(searchEmail.toLowerCase())) return false;
           if (machineFilter === "ALL") return true;
           return machineFilter === "ONLINE" ? m.isonline : !m.isonline;
         })
-        .map((m) => ({ ...user, machine: m, scripts: m.scripts }));
+        .map(
+          (m) =>
+          ({
+            ...user,
+            machine: m,
+            scripts: m.scripts,
+          } as UserRow)
+        );
     });
   }, [users, searchEmail, machineFilter]);
 
-  const columns = useMemo<ColumnDef<any>[]>(
+  // ---------------- Columns ----------------
+  const columns = useMemo<ColumnDef<UserRow>[]>(
     () => [
       { accessorKey: "email", header: "Email" },
       {
         accessorKey: "machine.hostname",
         header: "Machine",
-        cell: (info) =>
-          info.row.original.machine ? (
-            editable ? (
-              <Chip
-                label={info.getValue()}
-                color={info.row.original.machine.isonline ? "success" : "error"}
-                onDelete={() => {
-                  if (confirm(`Are you sure you want to unassign ${info.getValue()}?`)) {
-                    handleRemoveMachine(info.row.original.machine.id);
-                  }
-                }}
-              />
-            ) : (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                <CircleIcon
-                  fontSize="small"
-                  sx={{ color: info.row.original.machine.isonline ? "green" : "red" }}
-                />
-                {info.getValue()}
-              </Box>
-            )
-          ) : "-",
+        cell: (info) => {
+          const machine = info.row.original.machine;
+          if (!machine) return "-";
+          return editable ? (
+            <Chip
+              label={machine.hostname}
+              color={machine.isonline ? "success" : "error"}
+              onDelete={() => {
+                if (confirm(`Are you sure you want to unassign ${machine.hostname}?`)) {
+                  handleRemoveMachine(machine.id);
+                }
+              }}
+            />
+          ) : (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <CircleIcon fontSize="small" sx={{ color: machine.isonline ? "green" : "red" }} />
+              {machine.hostname}
+            </Box>
+          );
+        },
       },
       {
         accessorKey: "scripts",
         header: "Scripts",
-        cell: (info) =>
-          info.getValue()?.length ? (
+        cell: (info) => {
+          const scripts: Script[] = info.getValue() as Script[];
+          if (!scripts?.length) return "-";
+          return (
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-              {info.getValue().map((s: any) => (
+              {scripts.map((s) => (
                 <Chip key={s.id} label={s.filename.replace(/\.[^/.]+$/, "")} color={getScriptColor(s)} variant="outlined" />
               ))}
             </Box>
-          ) : "-",
+          );
+        },
       },
       {
         id: "actions",
@@ -257,6 +284,7 @@ export default function UsersTable({ editable = true }: UsersTableProps) {
     [editable]
   );
 
+  // ---------------- Table ----------------
   const table = useReactTable({
     data,
     columns,

@@ -92,26 +92,38 @@ export default function AdminDashboard() {
       {
         accessorKey: "script.filename",
         header: "Script",
-        cell: (info) => <code>{info.getValue()?.replace(/\.[^/.]+$/, "")}</code>,
+        cell: (info) => {
+          const filename = info.getValue() as string | undefined;
+          return <code>{filename?.replace(/\.[^/.]+$/, "")}</code>;
+        },
       },
       {
         accessorKey: "status",
         header: "Status",
-        cell: (info) => (
-          <Typography sx={{ fontWeight: 700, color: statusColors[info.getValue()], fontSize: "0.85rem" }}>
-            {info.getValue()}
-          </Typography>
-        ),
+        cell: (info) => {
+          const status = info.getValue() as string; // cast to string
+          return (
+            <Typography
+              sx={{
+                fontWeight: 700,
+                color: statusColors[status] || "black", // fallback color
+                fontSize: "0.85rem",
+              }}
+            >
+              {status}
+            </Typography>
+          );
+        },
       },
       {
         accessorKey: "createdAt",
         header: "Created",
-        cell: (info) => formatTime(info.getValue()),
+        cell: (info) => formatTime(info.getValue() as string | null),
       },
       {
         accessorKey: "completedAt",
         header: "Completed",
-        cell: (info) => formatTime(info.getValue()),
+        cell: (info) => formatTime(info.getValue() as string | null),
       },
     ],
     []
@@ -128,7 +140,7 @@ export default function AdminDashboard() {
   const agentsColumns = useMemo<ColumnDef<any>[]>(
     () => [
       { accessorKey: "hostname", header: "Hostname" },
-      { accessorKey: "createdAt", header: "Registered At", cell: (info) => formatTime(info.getValue()) },
+      { accessorKey: "createdAt", header: "Registered At",  cell: (info) => formatTime(info.getValue() as string | null)  },
       {
         accessorKey: "online",
         header: "Status",

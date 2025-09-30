@@ -21,9 +21,16 @@ import Image from "next/image";
 export default function Documentation() {
   return (
     <Box sx={{ p: { xs: 1, md: 3 } }}>
+      
       <Typography
-        variant="h4"
-        sx={{ mb: 3, fontWeight: 700, color: "primary.main" }}
+        variant="h5"
+        sx={{
+          mb: 3,
+          fontWeight: 700,
+          color: "primary.main",
+          fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif", // or use Google Font
+          textTransform: "uppercase",
+        }}
       >
         Documentation
       </Typography>

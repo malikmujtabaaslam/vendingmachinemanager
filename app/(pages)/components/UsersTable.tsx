@@ -1,0 +1,401 @@
+"use client";
+import { useState, useEffect, useMemo } from "react";
+import {
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+} from "@mui/material";
+import CircleIcon from "@mui/icons-material/Circle";
+import SettingsIcon from "@mui/icons-material/Settings";
+import KeyIcon from "@mui/icons-material/Key";
+import DeleteIcon from "@mui/icons-material/Delete";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  ColumnDef,
+  flexRender,
+} from "@tanstack/react-table";
+
+// ---------------- Types ----------------
+interface LastJob {
+  id: number;
+  pending: boolean;
+  stdout: string | null;
+  stderr: string | null;
+  exitCode: number | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+interface Script {
+  id: string;
+  filename: string;
+  lastJob: LastJob | null;
+}
+
+interface Machine {
+  id: string;
+  hostname: string;
+  isonline: boolean;
+  scripts: Script[];
+}
+
+interface User {
+  id: string;
+  email: string;
+  role: "user" | "admin";
+  machines: Machine[];
+}
+
+interface Agent {
+  id: string;
+  hostname: string;
+}
+
+interface UserRow extends User {
+  machine: Machine | null;
+  scripts: Script[];
+}
+
+interface UsersTableProps {
+  editable?: boolean;
+}
+
+// ---------------- Utils ----------------
+const getScriptColor = (script: Script) => {
+  const job = script.lastJob;
+  if (!job) return "default";
+  if (job.pending) return "secondary";
+  if (!job.pending && !job.completedAt) return "primary";
+  if (job.completedAt && job.stderr) return "error";
+  if (job.completedAt && job.stdout) return "success";
+  return "default";
+};
+
+// ---------------- Component ----------------
+export default function UsersTable({ editable = true }: UsersTableProps) {
+  const [users, setUsers] = useState<User[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [assigningUser, setAssigningUser] = useState<UserRow | null>(null);
+  const [selectedMachine, setSelectedMachine] = useState("");
+  const [searchEmail, setSearchEmail] = useState("");
+  const [machineFilter, setMachineFilter] = useState<"ALL" | "ONLINE" | "OFFLINE">("ALL");
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
+
+  // ---------------- Fetch Data ----------------
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  async function fetchData() {
+    await Promise.all([fetchUsers(), fetchUnassignedMachines()]);
+    setLoading(false);
+  }
+
+  async function fetchUsers() {
+    try {
+      const res = await fetch("/api/users", { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setUsers((data.users.filter((u: User) => u.role === "user") || []).reverse());
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function fetchUnassignedMachines() {
+    try {
+      const res = await fetch("/api/machines/unassigned", { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setAgents(data.agents || []);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  // ---------------- Actions ----------------
+  async function handleAssignMachine() {
+    if (!assigningUser || !selectedMachine) return;
+    try {
+      const res = await fetch("/api/machines/assign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ agentId: selectedMachine, userId: assigningUser.id }),
+      });
+      if (res.ok) {
+        setAssigningUser(null);
+        setSelectedMachine("");
+        fetchData();
+      } else {
+        console.error(await res.json());
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleRemoveMachine(agentId: string) {
+    try {
+      const res = await fetch("/api/machines/unassign", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ agentId }),
+      });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleChangePassword(user: UserRow) {
+    const newPassword = prompt(`Enter new password for ${user.email}`);
+    if (!newPassword) return;
+    try {
+      const res = await fetch(`/api/users/${user.id}/change-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ userId: user.id, password: newPassword }),
+      });
+      if (!res.ok) alert("Failed to change password");
+      else alert("Password changed!");
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleRemoveUser(user: UserRow) {
+    if (!confirm(`Remove ${user.email}?`)) return;
+    try {
+      const res = await fetch(`/api/users/${user.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) fetchData();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  // ---------------- Flatten Data ----------------
+  const data: UserRow[] = useMemo(() => {
+    return users.flatMap((user) => {
+      // No machines assigned
+      if (user.machines.length === 0) {
+        if (!user.email.toLowerCase().includes(searchEmail.toLowerCase())) return [];
+        return [
+          {
+            ...user,
+            machine: null,
+            scripts: [],
+          } as UserRow,
+        ];
+      }
+
+      // Flatten each machine into a UserRow
+      return user.machines
+        .filter((m) => {
+          if (!user.email.toLowerCase().includes(searchEmail.toLowerCase())) return false;
+          if (machineFilter === "ALL") return true;
+          return machineFilter === "ONLINE" ? m.isonline : !m.isonline;
+        })
+        .map(
+          (m) =>
+          ({
+            ...user,
+            machine: m,
+            scripts: m.scripts,
+          } as UserRow)
+        );
+    });
+  }, [users, searchEmail, machineFilter]);
+
+  // ---------------- Columns ----------------
+  const columns = useMemo<ColumnDef<UserRow>[]>(
+    () => [
+      { accessorKey: "email", header: "Email" },
+      {
+        accessorKey: "machine.hostname",
+        header: "Machine",
+        cell: (info) => {
+          const machine = info.row.original.machine;
+          if (!machine) return "-";
+          return editable ? (
+            <Chip
+              label={machine.hostname}
+              color={machine.isonline ? "success" : "error"}
+              onDelete={() => {
+                if (confirm(`Are you sure you want to unassign ${machine.hostname}?`)) {
+                  handleRemoveMachine(machine.id);
+                }
+              }}
+            />
+          ) : (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+              <CircleIcon fontSize="small" sx={{ color: machine.isonline ? "green" : "red" }} />
+              {machine.hostname}
+            </Box>
+          );
+        },
+      },
+      {
+        accessorKey: "scripts",
+        header: "Scripts",
+        cell: (info) => {
+          const scripts: Script[] = info.getValue() as Script[];
+          if (!scripts?.length) return "-";
+          return (
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+              {scripts.map((s) => (
+                <Chip key={s.id} label={s.filename.replace(/\.[^/.]+$/, "")} color={getScriptColor(s)} variant="outlined" />
+              ))}
+            </Box>
+          );
+        },
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: (info) =>
+          editable ? (
+            <Box sx={{ display: "flex", gap: 0.5 }}>
+              <IconButton size="small" color="primary" onClick={() => setAssigningUser(info.row.original)}>
+                <SettingsIcon />
+              </IconButton>
+              <IconButton size="small" color="secondary" onClick={() => handleChangePassword(info.row.original)}>
+                <KeyIcon />
+              </IconButton>
+              <IconButton size="small" color="error" onClick={() => handleRemoveUser(info.row.original)}>
+                <DeleteIcon />
+              </IconButton>
+            </Box>
+          ) : null,
+      },
+    ],
+    [editable]
+  );
+
+  // ---------------- Table ----------------
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  return (
+    <>
+      {/* Search + Filter */}
+      <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
+        <TextField
+          size="small"
+          placeholder="Search by email"
+          value={searchEmail}
+          onChange={(e) => setSearchEmail(e.target.value)}
+        />
+        <Select size="small" value={machineFilter} onChange={(e) => setMachineFilter(e.target.value as any)}>
+          <MenuItem value="ALL">All Machines</MenuItem>
+          <MenuItem value="ONLINE">Online</MenuItem>
+          <MenuItem value="OFFLINE">Offline</MenuItem>
+        </Select>
+      </Box>
+
+      {/* Table */}
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <CircularProgress />
+        </Box>
+      ) : (
+        <Box sx={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <th
+                      key={header.id}
+                      style={{ paddingLeft: "16px", paddingRight: "16px", textAlign: "left" }}
+                    >
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                    </th>
+                  ))}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length} style={{ textAlign: "center", padding: "8px 16px" }}>
+                    No users found.
+                  </td>
+                </tr>
+              ) : (
+                table.getRowModel().rows.map((row) => (
+                  <tr key={row.id}>
+                    {row.getVisibleCells().map((cell) => (
+                      <td
+                        key={cell.id}
+                        style={{
+                          paddingLeft: "16px",
+                          paddingRight: "16px",
+                          paddingTop: "4px",
+                          paddingBottom: "4px",
+                        }}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          {/* Pagination */}
+          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+            <Button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+              Previous
+            </Button>
+            <Typography>
+              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+            </Typography>
+            <Button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+              Next
+            </Button>
+          </Box>
+        </Box>
+      )}
+
+      {/* Assign Machine Dialog */}
+      {editable && (
+        <Dialog open={!!assigningUser} onClose={() => setAssigningUser(null)}>
+          <DialogTitle>Assign Machine to {assigningUser?.email}</DialogTitle>
+          <DialogContent>
+            <Select fullWidth value={selectedMachine} onChange={(e) => setSelectedMachine(e.target.value)}>
+              {agents.map((agent) => (
+                <MenuItem key={agent.id} value={agent.id}>
+                  {agent.hostname}
+                </MenuItem>
+              ))}
+            </Select>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAssigningUser(null)}>Cancel</Button>
+            <Button variant="contained" onClick={handleAssignMachine}>
+              Assign
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
+    </>
+  );
+}

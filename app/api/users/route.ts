@@ -28,7 +28,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Fetch users with their agents and scripts/jobs
+  console.time("users-api");
+
+  // Fetch everything in one go
   const users = await prisma.user.findMany({
     include: {
       agents: {
@@ -36,62 +38,42 @@ export async function GET(req: Request) {
           scripts: true,
         },
       },
-      jobs: true, // all jobs for this user
     },
   });
 
+  // Collect all script IDs
+  const allScriptIds = users.flatMap(u => u.agents.flatMap(a => a.scripts.map(s => s.id)));
+
+  // Pre-fetch last jobs for all scripts in a single query
+  const lastJobs = await prisma.job.findMany({
+    where: { scriptId: { in: allScriptIds } },
+    orderBy: { createdAt: "desc" },
+    distinct: ["scriptId"], // Only keep the latest per script
+  });
+
+  // Index jobs by scriptId
+  const lastJobsByScriptId = new Map(lastJobs.map(j => [j.scriptId, j]));
+
   const now = new Date();
 
-  const formattedUsers = await Promise.all(
-    users.map(async (u) => {
-      const machines = await Promise.all(
-        u.agents.map(async (agent) => {
-          // Determine isonline
-          const isOnline =
-            (now.getTime() - new Date(agent.updatedAt).getTime()) / 1000 <
-            ONLINE_INTERVAL;
-          // For each script of this agent, get latest job
-          const scripts = await Promise.all(
-            agent.scripts.map(async (s) => {
-              const lastJob = await prisma.job.findFirst({
-                where: { scriptId: s.id },
-                orderBy: { createdAt: "desc" },
-              });
+  const formattedUsers = users.map(u => ({
+    id: u.id,
+    email: u.email,
+    role: u.role,
+    machines: u.agents.map(agent => ({
+      id: agent.id,
+      hostname: agent.hostname,
+      isonline: (now.getTime() - new Date(agent.updatedAt).getTime()) / 1000 < ONLINE_INTERVAL,
+      scripts: agent.scripts.map(s => ({
+        id: s.id,
+        filename: s.filename,
+        lastJob: lastJobsByScriptId.get(s.id) || null,
+      })),
+    })),
+  }));
 
-              return {
-                id: s.id,
-                filename: s.filename,
-                lastJob: lastJob
-                  ? {
-                      id: lastJob.id,
-                      pending: lastJob.pending,
-                      stdout: lastJob.stdout,
-                      stderr: lastJob.stderr,
-                      exitCode: lastJob.exitCode,
-                      createdAt: lastJob.createdAt,
-                      completedAt: lastJob.completedAt,
-                    }
-                  : null,
-              };
-            })
-          );
-
-          return {
-            id: agent.id,
-            hostname: agent.hostname,
-            isonline: isOnline,
-            scripts,
-          };
-        })
-      );
-
-      return {
-        id: u.id,
-        email: u.email,
-        role: u.role,
-        machines,
-      };
-    })
-  );
+  console.timeEnd("users-api");
   return NextResponse.json({ users: formattedUsers });
 }
+
+

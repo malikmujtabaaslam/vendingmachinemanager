@@ -4,6 +4,7 @@ import useSWR from "swr";
 import {
   Box,
 } from "@mui/material";
+import Typography from "@mui/material/Typography";
 import JobsTable from "../../components/JobsTable";
 
 
@@ -30,8 +31,22 @@ export default function UserDashboard() {
   const jobsData = jobs || [];
 
   return (
-    <Box sx={{ mx: 4, mt: 3 }}>
-      <JobsTable jobs={jobsData} />
-    </Box>
+    <>
+      <Box sx={{ mx: 4, mt: 3 }}> 
+        <Typography
+        variant="h5"
+        sx={{
+          mb: 3,
+          fontWeight: 700,
+          color: "primary.main",
+          fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif", // or use Google Font
+          textTransform: "uppercase",
+        }}
+      >
+        User Dashboard
+      </Typography>
+        <JobsTable jobs={jobsData} />
+      </Box>
+    </>
   );
 }

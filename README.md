@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Remote Script Execution Dashboard
 
-## Getting Started
+## Overview
+This application provides a secure way for administrators and customers to manage and execute shell scripts across multiple Ubuntu machines located in private networks.  
+It is designed for scenarios where multiple customers share infrastructure, but must only have visibility and access to the machines and scripts explicitly assigned to them.
 
-First, run the development server:
+The platform offers:
+- Role-based access (Admin / User).
+- Secure machine registration and assignment.
+- A user-friendly dashboard for script execution and monitoring.
+- Logging and auditing of all actions.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Key Features
+- **Machine Registration**  
+  New Ubuntu machines are registered via a `register.sh` script that securely connects them to the dashboard. Once registered, they appear as _unassigned_ until linked to a user.  
+  ```bash
+  chmod +x ./register.sh
+  sudo ./register.sh
+  ```
+- **User & Machine Management**  
+  Admins can create user accounts and assign one or more machines to them. Users will only see their assigned machines in the dashboard.  
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Script Execution**  
+  All `.sh` files in `/home/xyz/` on a registered machine are exposed as clickable buttons in the UI. Users confirm before execution, ensuring safety.  
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+  ![Run Script Panel](public/run-script.png)
 
-## Learn More
+- **Job Queue**  
+  When a user runs a script:
+  1. A **job** is created and added to the central job queue with status **Pending**.
+  2. Each machine runs an agent that polls the queue for jobs assigned to it.
+  3. If the machine is online, it picks up the job, executes the script, and sends back results.
+  4. The dashboard updates the job status to **Success** or **Failed**, with logs visible in the output column.
 
-To learn more about Next.js, take a look at the following resources:
+- **Statuses & Colors**  
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+  ![Machine & Script Status](public/script-status.png)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+  - **Machines**: 🟢 Green = online, 🔴 Red = offline.  
+  - **Scripts**: ⚫ Grey = never run, 🟠 Orange = running, 🟢 Green = success, 🔴 Red = failed.  
 
-## Deploy on Vercel
+- **Audit Logging**  
+  Every script execution is logged with details of _who_ ran it, on _which machine_, and _when_.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## How It Works (Job Queue Model)
+1. **User submits job** → Dashboard creates a pending job record.  
+2. **Machine agent polls** → Checks for jobs assigned to its machine.  
+3. **Script execution** → The machine runs the shell script locally.  
+4. **Result reporting** → The machine posts back stdout/stderr and updates the job status.  
+5. **Dashboard updates** → Users see real-time status changes and results in the UI.  
+
+This decoupled job queue approach ensures:
+- Machines don’t need to be directly exposed to the internet.  
+- Jobs can safely wait in the queue until machines come online.  
+- Users always have a clear record of past executions.  
+
+---
+
+## Use Cases
+- Running maintenance scripts on distributed Ubuntu PCs.  
+- Allowing multiple customers to safely manage their own machines.  
+- Centralized monitoring of execution results across private networks.  
+- Auditable execution history for compliance and debugging.  

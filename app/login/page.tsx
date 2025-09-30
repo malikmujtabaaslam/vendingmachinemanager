@@ -24,6 +24,7 @@ export default function LoginPage() {
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
       localStorage.setItem("userId", data.userId);
+      localStorage.setItem("email", data.email);
       window.location.href = data.role === "admin" ? "/admin/dashboard" : "/user/dashboard";
     } else {
       setError(data.error || "Login failed");

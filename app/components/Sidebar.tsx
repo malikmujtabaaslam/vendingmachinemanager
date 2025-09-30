@@ -17,7 +17,8 @@ import PersonIcon from "@mui/icons-material/Person";
 import EmailIcon from "@mui/icons-material/Email";
 import BookIcon from "@mui/icons-material/Book";
 import { usePathname } from "next/navigation";
-
+import Image from "next/image";
+import { IconButton } from "@mui/material";
 // Wrap Next.js Link to forward ref for MUI ListItem
 const NextLink = forwardRef<HTMLAnchorElement, LinkProps>((props, ref) => (
   <Link {...props} ref={ref} />
@@ -66,7 +67,10 @@ export default function Sidebar() {
     >
       <Toolbar>
         <Typography variant="h6" sx={{ fontWeight: 700, letterSpacing: 1 }}>
-          Vending Mngt
+          <IconButton edge="start" color="inherit">
+                <Image src="/favicon.ico" alt="Logo" width={32} height={32} />
+              </IconButton>
+          VMM
         </Typography>
       </Toolbar>
       <Divider />

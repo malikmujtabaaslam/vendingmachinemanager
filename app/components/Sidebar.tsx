@@ -15,6 +15,7 @@ import DashboardIcon from "@mui/icons-material/Dashboard";
 import GroupIcon from "@mui/icons-material/Group";
 import PersonIcon from "@mui/icons-material/Person";
 import EmailIcon from "@mui/icons-material/Email";
+import BookIcon from "@mui/icons-material/Book";
 import { usePathname } from "next/navigation";
 
 // Wrap Next.js Link to forward ref for MUI ListItem
@@ -37,6 +38,7 @@ export default function Sidebar() {
       items: [
         { text: "Dashboard", href: "/admin/dashboard", icon: <DashboardIcon /> },
         { text: "Users", href: "/admin/users", icon: <GroupIcon /> },
+        { text: "Documentation", href: "/admin/documentation", icon: <BookIcon /> },
       ],
     },
     {

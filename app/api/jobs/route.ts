@@ -12,10 +12,12 @@ export async function POST(req: Request) {
 
   const { scriptId } = await req.json();
 
-  // ✅ Find the script and its agent
+  // ✅ Find the script and its agent + owner
   const script = await prisma.script.findUnique({
     where: { id: scriptId },
-    include: { agent: true },
+    include: {
+      agent: true,
+    },
   });
 
   if (!script) {
@@ -26,7 +28,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No agent linked to this script" }, { status: 404 });
   }
 
-  // ✅ Create job using script.agentId
+  // ✅ Ensure the authenticated user owns the agent (or allow admins)
+  if (decoded.role !== "admin" && script.agent.ownerId !== decoded.sub) {
+    return NextResponse.json({ error: "Forbidden: Not your agent" }, { status: 403 });
+  }
+
+  // ✅ Create job
   const job = await prisma.job.create({
     data: {
       agentId: script.agentId!,

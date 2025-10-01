@@ -46,7 +46,7 @@ export async function GET(req: Request) {
     return NextResponse.json(jobs);
   } else {
     const jobs = await prisma.job.findMany({
-      where: { userId: decoded.id },
+      where: { userId: decoded.sub },
       include: { agent: true, script: true },
       orderBy: { createdAt: "desc" }, // ✅ reverse order
     });

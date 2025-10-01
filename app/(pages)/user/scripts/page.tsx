@@ -34,7 +34,7 @@ const fetcher = async (url: string) => {
 };
 
 export default function RunScript() {
-  const { data, error, mutate } = useSWR("/api/machines", fetcher, {
+  const { data, error } = useSWR("/api/machines", fetcher, {
     refreshInterval: 5000,
   });
 
@@ -42,7 +42,7 @@ export default function RunScript() {
     refreshInterval: 5000,
   });
 
-  const user = data?.user;
+  const machines = data?.machines || [];
   const jobsData = jobs || [];
 
   const [machine, setMachine] = useState<string | null>(null);
@@ -53,15 +53,17 @@ export default function RunScript() {
 
   // Set default machine and script
   useEffect(() => {
-    if (user?.machines?.length) {
-      const firstMachine = user.machines[0];
+    if (machines.length) {
+      const firstMachine = machines[0];
       setMachine(firstMachine.id);
-      if (firstMachine.scripts?.length) setScriptId(firstMachine.scripts[0].id);
+      if (firstMachine.scripts?.length) {
+        setScriptId(firstMachine.scripts[0].id);
+      }
     }
-  }, [user]);
+  }, [machines]);
 
   const availableScripts =
-    user?.machines?.find((m: any) => m.id === machine)?.scripts || [];
+    machines.find((m: any) => m.id === machine)?.scripts || [];
 
   async function submitJob() {
     if (!machine || !scriptId) return;
@@ -82,7 +84,9 @@ export default function RunScript() {
         setTimeout(() => setMessage(""), 5000);
       } else {
         const data = await res.json();
-        setMessage(`❌ Failed to schedule script: ${data.error || "Unknown error"}`);
+        setMessage(
+          `❌ Failed to schedule script: ${data.error || "Unknown error"}`
+        );
         setTimeout(() => setMessage(""), 5000);
       }
     } catch (err) {
@@ -99,7 +103,12 @@ export default function RunScript() {
     <Box sx={{ mx: 4, mt: 3 }}>
       <Typography
         variant="h5"
-        sx={{ mb: 3, fontWeight: 700, color: "primary.main", textTransform: "uppercase" }}
+        sx={{
+          mb: 3,
+          fontWeight: 700,
+          color: "primary.main",
+          textTransform: "uppercase",
+        }}
       >
         Vending Machines
       </Typography>
@@ -135,42 +144,62 @@ export default function RunScript() {
                 onSubmit={(e) => {
                   e.preventDefault();
                   setConfirmOpen(true);
-                }}>
+                }}
+              >
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <Autocomplete
-                    options={user?.machines || []}
+                    options={machines}
                     getOptionLabel={(m: any) => m.hostname || m.id}
-                    value={user?.machines?.find((m: any) => m.id === machine) || null}
+                    value={machines.find((m: any) => m.id === machine) || null}
                     onChange={(_, newValue) => {
                       setMachine(newValue ? newValue.id : null);
                       setScriptId(
-                        newValue?.scripts?.length ? newValue.scripts[0].id : null
+                        newValue?.scripts?.length
+                          ? newValue.scripts[0].id
+                          : null
                       );
                     }}
                     renderInput={(params) => (
-                      <TextField {...params} label="Select Machine" size="small" fullWidth />
+                      <TextField
+                        {...params}
+                        label="Select Machine"
+                        size="small"
+                        fullWidth
+                      />
                     )}
                   />
                   <Autocomplete
                     options={availableScripts}
-                    getOptionLabel={(s: any) =>
-                      s.filename ? s.filename.replace(/\.[^/.]+$/, "") : ""
+                    getOptionLabel={(s: any) => s.name || ""}
+                    value={
+                      availableScripts.find((s: any) => s.id === scriptId) ||
+                      null
                     }
-                    value={availableScripts.find((s: any) => s.id === scriptId) || null}
-                    onChange={(_, newValue) => setScriptId(newValue ? newValue.id : null)}
+                    onChange={(_, newValue) =>
+                      setScriptId(newValue ? newValue.id : null)
+                    }
                     renderInput={(params) => (
-                      <TextField {...params} label="Select Script" size="small" fullWidth />
+                      <TextField
+                        {...params}
+                        label="Select Script"
+                        size="small"
+                        fullWidth
+                      />
                     )}
                     disabled={!machine}
                   />
-                  <Button type="submit" variant="contained" color="primary" fullWidth>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                  >
                     Run
                   </Button>
                 </Box>
               </form>
             </CardContent>
           </Card>
-
         </Box>
 
         {/* Right: Jobs Table */}
@@ -185,9 +214,15 @@ export default function RunScript() {
         <DialogContent>
           <Typography>
             Do you want to run{" "}
-            <b>{availableScripts.find((s: any) => s.id === scriptId)?.filename.replace(/\.[^/.]+$/, "") || "selected script"}</b>{" "}
+            <b>
+              {availableScripts.find((s: any) => s.id === scriptId)?.name ||
+                "selected script"}
+            </b>{" "}
             script on{" "}
-            <b>{user?.machines?.find((m: any) => m.id === machine)?.hostname || "selected machine"}</b>{" "}
+            <b>
+              {machines.find((m: any) => m.id === machine)?.hostname ||
+                "selected machine"}
+            </b>{" "}
             machine?
           </Typography>
         </DialogContent>
@@ -208,24 +243,49 @@ export default function RunScript() {
         </DialogActions>
       </Dialog>
 
-
       {/* Documentation Dialog */}
-      <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} maxWidth="xl" fullWidth>
+      <Dialog
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        maxWidth="xl"
+        fullWidth
+      >
         <DialogTitle>
           <TerminalIcon color="action" /> User Guide: Running Scripts
         </DialogTitle>
         <DialogContent dividers>
-          <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              gap: 2,
+            }}
+          >
             <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Follow these simple steps to run a script on your assigned machine:
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 2 }}
+              >
+                Follow these simple steps to run a script on your assigned
+                machine:
               </Typography>
               <ul>
-                <li>Select your <b>machine</b> from the first dropdown.</li>
-                <li>Choose a <b>script</b> from the second dropdown.</li>
-                <li>Click the <b>Run</b> button to submit the job.</li>
-                <li>Your request will appear as <b>Pending</b> in the table.</li>
-                <li>The <b>Output</b> column shows if it succeeded or failed.</li>
+                <li>
+                  Select your <b>machine</b> from the first dropdown.
+                </li>
+                <li>
+                  Choose a <b>script</b> from the second dropdown.
+                </li>
+                <li>
+                  Click the <b>Run</b> button to submit the job.
+                </li>
+                <li>
+                  Your request will appear as <b>Pending</b> in the table.
+                </li>
+                <li>
+                  The <b>Output</b> column shows if it succeeded or failed.
+                </li>
               </ul>
             </Box>
             <Box sx={{ flex: 1, textAlign: "center" }}>
@@ -234,7 +294,11 @@ export default function RunScript() {
                 alt="Run Scripts panel screenshot"
                 width={800}
                 height={300}
-                style={{ borderRadius: "8px", border: "1px solid #ddd", maxWidth: "100%" }}
+                style={{
+                  borderRadius: "8px",
+                  border: "1px solid #ddd",
+                  maxWidth: "100%",
+                }}
               />
               <Typography variant="caption" color="text.secondary">
                 Example of the "Run Scripts" panel
@@ -243,7 +307,11 @@ export default function RunScript() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setHelpOpen(false)} variant="contained" color="primary">
+          <Button
+            onClick={() => setHelpOpen(false)}
+            variant="contained"
+            color="primary"
+          >
             Close
           </Button>
         </DialogActions>

@@ -49,6 +49,7 @@ export default function RunScript() {
   const [scriptId, setScriptId] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const [message, setMessage] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   // Set default machine and script
   useEffect(() => {
@@ -62,8 +63,7 @@ export default function RunScript() {
   const availableScripts =
     user?.machines?.find((m: any) => m.id === machine)?.scripts || [];
 
-  async function submitJob(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitJob() {
     if (!machine || !scriptId) return;
 
     try {
@@ -131,7 +131,11 @@ export default function RunScript() {
                   {message}
                 </Alert>
               )}
-              <form onSubmit={submitJob}>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setConfirmOpen(true);
+                }}>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <Autocomplete
                     options={user?.machines || []}
@@ -149,7 +153,9 @@ export default function RunScript() {
                   />
                   <Autocomplete
                     options={availableScripts}
-                    getOptionLabel={(s: any) => s.filename}
+                    getOptionLabel={(s: any) =>
+                      s.filename ? s.filename.replace(/\.[^/.]+$/, "") : ""
+                    }
                     value={availableScripts.find((s: any) => s.id === scriptId) || null}
                     onChange={(_, newValue) => setScriptId(newValue ? newValue.id : null)}
                     renderInput={(params) => (
@@ -172,6 +178,36 @@ export default function RunScript() {
           <JobsTable jobs={jobsData} />
         </Box>
       </Box>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Confirm Run</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Do you want to run{" "}
+            <b>{availableScripts.find((s: any) => s.id === scriptId)?.filename.replace(/\.[^/.]+$/, "") || "selected script"}</b>{" "}
+            script on{" "}
+            <b>{user?.machines?.find((m: any) => m.id === machine)?.hostname || "selected machine"}</b>{" "}
+            machine?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)} color="secondary">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => {
+              setConfirmOpen(false);
+              submitJob();
+            }}
+            color="primary"
+            variant="contained"
+          >
+            Yes, Run
+          </Button>
+        </DialogActions>
+      </Dialog>
+
 
       {/* Documentation Dialog */}
       <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} maxWidth="xl" fullWidth>

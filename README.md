@@ -29,7 +29,6 @@ The platform offers:
   2. Each machine runs an agent that polls the queue for jobs assigned to it.
   3. If the machine is online, it picks up the job, executes the script, and sends back results.
   4. The dashboard updates the job status to **Success** or **Failed**, with logs visible in the output column.
-  ![Run Script Panel](public/run-script.png)
 
 - **Statuses & Colors**  
 

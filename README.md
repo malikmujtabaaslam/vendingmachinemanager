@@ -62,3 +62,47 @@ This decoupled job queue approach ensures:
 - Allowing multiple customers to safely manage their own machines.  
 - Centralized monitoring of execution results across private networks.  
 - Auditable execution history for compliance and debugging.  
+
+---
+
+## API documentation
+You can explore the full **API documentation** and test endpoints via Swagger here:  
+[Swagger API Docs](https://vendingmachinemanager-hl4m.vercel.app/docs) – This page provides an interactive interface for:
+- Logging in and obtaining a JWT token
+- Viewing machines and scripts assigned to the user
+- Running scripts on specific machines
+- Checking job status and logs
+
+### Workflow Diagram
+
+```mermaid
+flowchart LR
+    A[User Login] --> B[Receive JWT Token]
+    B --> C[Authorize in Swagger]
+    C --> D[Get Machines & Scripts via /api/machines]
+    D --> F[Run Script, use scriptId from above via /api/jobs POST]
+
+    %% Direct path from F to K
+    I --> K[Post stdout/stderr & Exit Code]
+
+    %% Separate queued/execution path
+    F --> G[Job Queued]
+    G --> H[Machine Agent Polls Job Queue]
+    H --> I[Execute Script Locally]
+    K --> L
+
+    F --> L[User Views Job Details via /api/jobs/id] 
+
+    %% Styling
+    style G fill:#f9f,stroke:#333,stroke-width:2px
+    style H fill:#f9f,stroke:#333,stroke-width:2px
+    style I fill:#f9f,stroke:#333,stroke-width:2px
+    style K fill:#f9f,stroke:#333,stroke-width:2px
+```
+### Legend:
+
+- JWT Token secures the endpoints
+
+- Machines API provides user-specific machine & script list
+
+- Jobs API handles script execution and tracking

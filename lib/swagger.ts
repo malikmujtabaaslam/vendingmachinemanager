@@ -6,7 +6,7 @@ const options = {
     openapi: "3.0.0",
     info: {
       title: "Machine Manager User API",
-      version: "1.0.0",
+      version: "1.0.1",
       description: `
 Welcome to the **Vending Machine Manager User API** 👋
 

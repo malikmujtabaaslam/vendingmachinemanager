@@ -10,22 +10,28 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { agentId, scriptId } = await req.json();
-  console.log("Creating job for agent:", agentId, "scriptId:", scriptId);
+  const { scriptId } = await req.json();
 
-  // Verify agent exists
-  const agent = await prisma.agent.findUnique({ where: { id: agentId } });
-  if (!agent) {
-    return NextResponse.json({ error: "No agent" }, { status: 404 });
+  // ✅ Find the script and its agent
+  const script = await prisma.script.findUnique({
+    where: { id: scriptId },
+    include: { agent: true },
+  });
+
+  if (!script) {
+    return NextResponse.json({ error: "Script not found" }, { status: 404 });
   }
 
-  // Create the job (pending defaults to true)
+  if (!script.agent) {
+    return NextResponse.json({ error: "No agent linked to this script" }, { status: 404 });
+  }
+
+  // ✅ Create job using script.agentId
   const job = await prisma.job.create({
     data: {
-      agentId,
+      agentId: script.agentId!,
       scriptId,
       userId: decoded.sub,
-      // pending: true,  // ✅ not needed, default handles it
     },
   });
 

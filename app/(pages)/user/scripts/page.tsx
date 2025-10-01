@@ -73,7 +73,7 @@ export default function RunScript() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ agentId: machine, scriptId }),
+        body: JSON.stringify({ scriptId }),
       });
 
       if (res.ok) {

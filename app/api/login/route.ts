@@ -7,11 +7,17 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(req: Request) {
   const { email, password } = await req.json();
+
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return NextResponse.json({ error: "Invalid login" }, { status: 400 });
+  if (!user) {
+    return NextResponse.json({ error: "Invalid login" }, { status: 400 });
+  }
 
   const valid = await verifyPassword(password, user.password);
-  if (!valid) return NextResponse.json({ error: "Invalid login" }, { status: 400 });
+  if (!valid) {
+    return NextResponse.json({ error: "Invalid login" }, { status: 400 });
+  }
+
   // Include role in the token payload
   const token = jwt.sign(
     {

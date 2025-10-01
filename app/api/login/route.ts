@@ -30,7 +30,13 @@ export async function POST(req: Request) {
   );
 
   return NextResponse.json(
-    { message: "Logged in", token, role: user.role, userId: user.id, email: user.email },
+    {
+      message: "Logged in",
+      token,
+      role: user.role,
+      userId: user.id,
+      email: user.email,
+    },
     {
       status: 200,
       headers: {

@@ -29,10 +29,28 @@ else
     echo "pip3 is already installed: $(pip3 --version)"
 fi
 
-echo "Installing Python dependency: requests"
-#sudo pip3 install --user requests
+echo "Checking Python 'requests' library..."
+if python3 -c "import requests" &>/dev/null; then
+    echo "Python 'requests' is already installed."
+else
+    echo "'requests' not found, trying to install via pip3..."
+    if command -v pip3 &>/dev/null; then
+        pip3 install --user requests && echo "Installed 'requests' via pip3." || {
+            echo "Failed to install via pip3, trying apt..."
+            sudo apt install -y python3-requests >/dev/null 2>&1 || true
+        }
+    else
+        echo "pip3 not found, installing via apt..."
+        sudo apt install -y python3-requests >/dev/null 2>&1 || true
+    fi
 
-sudo apt install python3-requests >/dev/null 2>&1 || true
+    # final check
+    if python3 -c "import requests" &>/dev/null; then
+        echo "'requests' installed successfully."
+    else
+        echo "⚠️ Could not install 'requests'. Please install manually."
+    fi
+fi
 
 cat > "$CONFIG_FILE" <<EOF
 {

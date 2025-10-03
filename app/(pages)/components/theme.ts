@@ -5,7 +5,7 @@ const theme = createTheme({
     mode: "light",
     background: {
       default: "#ffffff", // Facebook grey
-      paper: "#f0f2f5",
+      paper: "#ffffff",
     },
     primary: { main: "#00897b" },
     secondary: { main: "#ffb300" },

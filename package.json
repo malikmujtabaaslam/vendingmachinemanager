@@ -1,6 +1,6 @@
 {
   "name": "ubuntu-agents",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -32,6 +32,8 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.63.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-react": "^5.29.1",
     "swr": "^2.3.6"
   },
   "devDependencies": {
@@ -42,6 +44,7 @@
     "@types/node": "^20.19.17",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/swagger-ui-react": "^5.18.0",
     "autoprefixer": "^10.4.21",
     "postcss": "^8.5.6",
     "prisma": "^6.16.2",

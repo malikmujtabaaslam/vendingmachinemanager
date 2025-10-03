@@ -101,6 +101,17 @@ export default function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           )}
       </List>
       <Divider sx={{ mt: "auto" }} />
+      <Typography variant="caption" sx={{ pl: 2, pb: 2, color: "primary.contrastText", opacity: 0.7 }}>
+        <a
+          href="/docs"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "inherit", textDecoration: "underline", fontSize: '15px' }}
+        >
+          <BookIcon fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
+          API Explorer
+        </a>
+      </Typography>
       <Typography variant="caption" sx={{ pl: 2, color: "primary.contrastText", opacity: 0.7 }}>
         © {new Date().getFullYear()} Invictus Zone
       </Typography>

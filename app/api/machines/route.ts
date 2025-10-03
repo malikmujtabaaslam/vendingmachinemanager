@@ -2,7 +2,82 @@ import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
-const ONLINE_INTERVAL = parseInt(process.env.ONLINE_INTERVAL || "5"); // seconds
+/**
+ * @openapi
+ * /api/machines:
+ *   get:
+ *     summary: Get user's machines with available scripts
+ *     description: |
+ *       Returns a list of machines owned by the authenticated user, along with their available scripts.  
+ *       - Each machine has an **id** and a **hostname**.  
+ *       - Each machine contains a list of **scripts** (id + name) that can be executed on that machine.  
+ *       - Use the `scriptId` from the response in the **Jobs API** (`POST /api/jobs`) to run a script.  
+ *       
+ *     tags: [Machines]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of machines with their scripts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 machines:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                         description: Unique identifier of the machine (Agent ID)
+ *                         example: "cmg1nz9th0000jl04ydbxftug"
+ *                       hostname:
+ *                         type: string
+ *                         description: Hostname of the machine
+ *                         example: "agent2-vm"
+ *                       scripts:
+ *                         type: array
+ *                         description: List of available scripts on this machine
+ *                         items:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: string
+ *                               description: Script ID
+ *                               example: "cmg1p3wyz000jjy047isam87k"
+ *                             name:
+ *                               type: string
+ *                               description: Human-readable script name
+ *                               example: "101"
+ *             example:
+ *               machines:
+ *                 - id: "cmg1nz9th0000jl04ydbxftug"
+ *                   hostname: "agent2-vm"
+ *                   scripts:
+ *                     - id: "cmg1p3wyz000jjy047isam87k"
+ *                       name: "101"
+ *                     - id: "cmg1p416e000kjy04lg5iq325"
+ *                       name: "203"
+ *                     - id: "cmg1p49ky000ljy04mu8yy9j2"
+ *                       name: "405"
+ *                 - id: "cmg1mm5a80000jy041dw5n4l8"
+ *                   hostname: "agent1-vm"
+ *                   scripts:
+ *                     - id: "cmg1mm61z0003jy04v4kuienc"
+ *                       name: "102"
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 error:
+ *                   type: string
+ *                   example: "Unauthorized"
+ */
 
 export async function GET(req: Request) {
   const auth = req.headers.get("authorization")?.replace("Bearer ", "");
@@ -14,16 +89,14 @@ export async function GET(req: Request) {
 
   const userId = decoded.sub;
 
-  // Fetch single user with their agents and jobs
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
       agents: {
         include: {
-          scripts: true,
+          scripts: { select: { id: true, filename: true } },
         },
       },
-      jobs: true, // all jobs for this user
     },
   });
 
@@ -31,54 +104,14 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const now = new Date();
+  const machines = user.agents.map((agent) => ({
+    id: agent.id,
+    hostname: agent.hostname,
+    scripts: agent.scripts.map((s) => ({
+      id: s.id,
+      name: s.filename.replace(/\.[^/.]+$/, ""), // strip extension for cleaner display
+    })),
+  }));
 
-  const machines = await Promise.all(
-    user.agents.map(async (agent) => {
-      const isOnline =
-        (now.getTime() - new Date(agent.updatedAt).getTime()) / 1000 <
-        ONLINE_INTERVAL;
-
-      const scripts = await Promise.all(
-        agent.scripts.map(async (s) => {
-          const lastJob = await prisma.job.findFirst({
-            where: { scriptId: s.id },
-            orderBy: { createdAt: "desc" },
-          });
-
-          return {
-            id: s.id,
-            filename: s.filename,
-            lastJob: lastJob
-              ? {
-                  id: lastJob.id,
-                  pending: lastJob.pending,
-                  stdout: lastJob.stdout,
-                  stderr: lastJob.stderr,
-                  exitCode: lastJob.exitCode,
-                  createdAt: lastJob.createdAt,
-                  completedAt: lastJob.completedAt,
-                }
-              : null,
-          };
-        })
-      );
-
-      return {
-        id: agent.id,
-        hostname: agent.hostname,
-        isonline: isOnline,
-        scripts,
-      };
-    })
-  );
-
-  const formattedUser = {
-    id: user.id,
-    email: user.email,
-    role: user.role,
-    machines,
-  };
-
-  return NextResponse.json({ user: formattedUser });
+  return NextResponse.json({ machines });
 }

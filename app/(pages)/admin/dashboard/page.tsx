@@ -11,7 +11,6 @@ import {
   Select,
   MenuItem,
   CircularProgress,
-  Chip,
 } from "@mui/material";
 import { useReactTable, getCoreRowModel, getPaginationRowModel, ColumnDef, flexRender } from "@tanstack/react-table";
 import UsersTable from "../../components/UsersTable";
@@ -21,7 +20,7 @@ const fetcher = (url: string) =>
     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
   }).then((res) => res.json());
 
-// Format relative time
+// Helper: relative time
 function formatTime(timestamp: string | null) {
   if (!timestamp) return "-";
   const date = new Date(timestamp);
@@ -31,18 +30,17 @@ function formatTime(timestamp: string | null) {
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(seconds / 3600);
 
-  if (seconds < 60) return `${seconds} sec ago`;
-  if (minutes < 60) return `${minutes} min ${seconds % 60} sec ago`;
-  if (hours < 24)
-    return `${hours} hr ${minutes % 60} min ${seconds % 60} sec ago`;
+  if (seconds < 60) return `${seconds}s ago`;
+  if (minutes < 60) return `${minutes}m ${seconds % 60}s ago`;
+  if (hours < 24) return `${hours}h ${minutes % 60}m ago`;
   return date.toLocaleString();
 }
 
 const statusColors: Record<string, string> = {
-  PENDING: "#ff9800",
-  RUNNING: "#2196f3",
-  FAILED: "#f44336",
-  DONE: "#4caf50",
+  PENDING: "#f59e0b", // amber
+  RUNNING: "#3b82f6", // blue
+  FAILED: "#ef4444", // red
+  DONE: "#22c55e", // green
 };
 
 export default function AdminDashboard() {
@@ -52,7 +50,7 @@ export default function AdminDashboard() {
   const [jobSearch, setJobSearch] = useState("");
   const [jobStatusFilter, setJobStatusFilter] = useState("ALL");
 
-  // Prepare jobs data with status
+  // --- JOBS DATA ---
   const jobsData = useMemo(() => {
     if (!jobs) return [];
     return jobs
@@ -72,121 +70,84 @@ export default function AdminDashboard() {
       });
   }, [jobs, jobSearch, jobStatusFilter]);
 
-  // Prepare unassigned agents
+  // --- UNASSIGNED AGENTS ---
   const unassignedAgents = useMemo(() => {
     if (!agents?.agents) return [];
     const ONLINE_INTERVAL = parseInt(process.env.ONLINE_INTERVAL || "10");
-    const now = new Date().getTime();
+    const now = Date.now();
     return agents.agents.map((agent: any) => ({
       ...agent,
       online: (now - new Date(agent.updatedAt).getTime()) / 1000 < ONLINE_INTERVAL,
     }));
   }, [agents]);
 
-  // Define columns for Jobs
-  const jobsColumns = useMemo<ColumnDef<any>[]>(
-    () => [
-      { accessorKey: "id", header: "ID" },
-      { accessorKey: "user.email", header: "User" },
-      { accessorKey: "agent.hostname", header: "Agent" },
-      {
-        accessorKey: "script.filename",
-        header: "Script",
-        cell: (info) => {
-          const filename = info.getValue() as string | undefined;
-          return <code>{filename?.replace(/\.[^/.]+$/, "")}</code>;
-        },
+  // --- TABLE COLUMNS ---
+  const jobsColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: "id", header: "ID" },
+    { accessorKey: "user.email", header: "User" },
+    { accessorKey: "agent.hostname", header: "Agent" },
+    {
+      accessorKey: "script.filename",
+      header: "Script",
+      cell: (info) => <code>{(info.getValue() as string)?.replace(/\.[^/.]+$/, "")}</code>,
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: (info) => {
+        const status = info.getValue() as string;
+        return (
+          <Typography
+            sx={{
+              fontWeight: 700,
+              color: statusColors[status] || "black",
+              fontSize: "0.85rem",
+            }}
+          >
+            {status}
+          </Typography>
+        );
       },
-      {
-        accessorKey: "status",
-        header: "Status",
-        cell: (info) => {
-          const status = info.getValue() as string; // cast to string
-          return (
-            <Typography
-              sx={{
-                fontWeight: 700,
-                color: statusColors[status] || "black", // fallback color
-                fontSize: "0.85rem",
-              }}
-            >
-              {status}
-            </Typography>
-          );
-        },
-      },
-      {
-        accessorKey: "createdAt",
-        header: "Created",
-        cell: (info) => formatTime(info.getValue() as string | null),
-      },
-      {
-        accessorKey: "completedAt",
-        header: "Completed",
-        cell: (info) => formatTime(info.getValue() as string | null),
-      },
-    ],
-    []
-  );
+    },
+    { accessorKey: "createdAt", header: "Created", cell: (info) => formatTime(info.getValue() as string | null) },
+    { accessorKey: "completedAt", header: "Completed", cell: (info) => formatTime(info.getValue() as string | null) },
+  ], []);
 
-  const jobsTable = useReactTable({
-    data: jobsData,
-    columns: jobsColumns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
+  const agentsColumns = useMemo<ColumnDef<any>[]>(() => [
+    { accessorKey: "hostname", header: "Hostname" },
+    { accessorKey: "createdAt", header: "Registered", cell: (info) => formatTime(info.getValue() as string | null) },
+    {
+      accessorKey: "online",
+      header: "Status",
+      cell: (info) => (
+        <div className="flex items-center gap-2">
+          <span
+            className={`w-2.5 h-2.5 rounded-full ${
+              info.getValue() ? "bg-green-500" : "bg-red-500"
+            }`}
+          ></span>
+          {info.getValue() ? "Online" : "Offline"}
+        </div>
+      ),
+    },
+  ], []);
 
-  // Columns for Unassigned Machines
-  const agentsColumns = useMemo<ColumnDef<any>[]>(
-    () => [
-      { accessorKey: "hostname", header: "Hostname" },
-      { accessorKey: "createdAt", header: "Registered At",  cell: (info) => formatTime(info.getValue() as string | null)  },
-      {
-        accessorKey: "online",
-        header: "Status",
-        cell: (info) => (
-          <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <span
-              style={{
-                display: "inline-block",
-                width: "10px",
-                height: "10px",
-                borderRadius: "50%",
-                backgroundColor: info.getValue() ? "green" : "red",
-              }}
-            ></span>
-            {info.getValue() ? "Online" : "Offline"}
-          </span>
-        ),
-      },
-    ],
-    []
-  );
-
-  const agentsTable = useReactTable({
-    data: unassignedAgents,
-    columns: agentsColumns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
+  const jobsTable = useReactTable({ data: jobsData, columns: jobsColumns, getCoreRowModel: getCoreRowModel(), getPaginationRowModel: getPaginationRowModel() });
+  const agentsTable = useReactTable({ data: unassignedAgents, columns: agentsColumns, getCoreRowModel: getCoreRowModel(), getPaginationRowModel: getPaginationRowModel() });
 
   return (
-    <Box sx={{ p: { xs: 1, md: 3 } }}>
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: 700, color: "primary.main", textTransform: "uppercase" }}>
-        Admin Dashboard
-      </Typography>
-
-      {/* Jobs + Unassigned Machines */}
-      <Box sx={{ display: "flex", gap: 3, mb: 3 }}>
-        {/* Jobs Table 70% */}
-        <Card sx={{ flex: 7, borderRadius: 3, boxShadow: 4 }}>
+    <div className="space-y-6">
+      {/* --- JOBS + UNASSIGNED --- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Jobs (2/3 width) */}
+        <Card className="lg:col-span-2 shadow-md rounded-xl border border-gray-200">
           <CardHeader title="All Jobs" titleTypographyProps={{ variant: "h6" }} />
           <CardContent>
             <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
               <TextField
                 placeholder="Search Machine/Script"
                 size="small"
-                sx={{ flex: 1 }}
+                fullWidth
                 value={jobSearch}
                 onChange={(e) => setJobSearch(e.target.value)}
               />
@@ -204,117 +165,95 @@ export default function AdminDashboard() {
             </Box>
 
             {jobsLoading ? (
-              <Box sx={{ textAlign: "center", py: 3 }}>
+              <div className="flex justify-center py-6">
                 <CircularProgress />
-              </Box>
+              </div>
             ) : (
-              <Box sx={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    {jobsTable.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <th key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</th>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left border-collapse border border-gray-200">
+                  <thead className="bg-gray-100 text-gray-700">
+                    {jobsTable.getHeaderGroups().map((group) => (
+                      <tr key={group.id}>
+                        {group.headers.map((header) => (
+                          <th key={header.id} className="px-3 py-2 font-medium border-b border-gray-200">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </th>
                         ))}
                       </tr>
                     ))}
                   </thead>
                   <tbody>
                     {jobsTable.getRowModel().rows.length === 0 ? (
-                      <tr>
-                        <td colSpan={jobsColumns.length}>No jobs found.</td>
-                      </tr>
+                      <tr><td colSpan={jobsColumns.length} className="text-center py-4 text-gray-500">No jobs found.</td></tr>
                     ) : (
                       jobsTable.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
+                        <tr key={row.id} className="hover:bg-gray-50">
                           {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                            <td key={cell.id} className="px-3 py-2 border-b border-gray-100">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
                           ))}
                         </tr>
                       ))
                     )}
                   </tbody>
                 </table>
-
-                {/* Pagination */}
-                <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
-                  <button onClick={() => jobsTable.previousPage()} disabled={!jobsTable.getCanPreviousPage()}>
-                    Previous
-                  </button>
-                  <span>
-                    Page {jobsTable.getState().pagination.pageIndex + 1} of {jobsTable.getPageCount()}
-                  </span>
-                  <button onClick={() => jobsTable.nextPage()} disabled={!jobsTable.getCanNextPage()}>
-                    Next
-                  </button>
-                </Box>
-              </Box>
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Unassigned Machines Table 30% */}
-        <Card sx={{ flex: 3, borderRadius: 3, boxShadow: 4 }}>
+        {/* Unassigned Machines */}
+        <Card className="shadow-md rounded-xl border border-gray-200">
           <CardHeader title="Unassigned Machines" titleTypographyProps={{ variant: "h6" }} />
           <CardContent>
             {agentsLoading ? (
-              <Box sx={{ textAlign: "center", py: 3 }}>
+              <div className="flex justify-center py-6">
                 <CircularProgress />
-              </Box>
+              </div>
             ) : (
-              <Box sx={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    {agentsTable.getHeaderGroups().map((headerGroup) => (
-                      <tr key={headerGroup.id}>
-                        {headerGroup.headers.map((header) => (
-                          <th key={header.id}>{flexRender(header.column.columnDef.header, header.getContext())}</th>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left border-collapse border border-gray-200">
+                  <thead className="bg-gray-100 text-gray-700">
+                    {agentsTable.getHeaderGroups().map((group) => (
+                      <tr key={group.id}>
+                        {group.headers.map((header) => (
+                          <th key={header.id} className="px-3 py-2 font-medium border-b border-gray-200">
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </th>
                         ))}
                       </tr>
                     ))}
                   </thead>
                   <tbody>
                     {agentsTable.getRowModel().rows.length === 0 ? (
-                      <tr>
-                        <td colSpan={agentsColumns.length}>No unassigned machines found.</td>
-                      </tr>
+                      <tr><td colSpan={agentsColumns.length} className="text-center py-4 text-gray-500">No unassigned machines.</td></tr>
                     ) : (
                       agentsTable.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
+                        <tr key={row.id} className="hover:bg-gray-50">
                           {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                            <td key={cell.id} className="px-3 py-2 border-b border-gray-100">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
                           ))}
                         </tr>
                       ))
                     )}
                   </tbody>
                 </table>
-
-                {/* Pagination */}
-                <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
-                  <button onClick={() => agentsTable.previousPage()} disabled={!agentsTable.getCanPreviousPage()}>
-                    Previous
-                  </button>
-                  <span>
-                    Page {agentsTable.getState().pagination.pageIndex + 1} of {agentsTable.getPageCount()}
-                  </span>
-                  <button onClick={() => agentsTable.nextPage()} disabled={!agentsTable.getCanNextPage()}>
-                    Next
-                  </button>
-                </Box>
-              </Box>
+              </div>
             )}
           </CardContent>
         </Card>
-      </Box>
+      </div>
 
-      {/* Users Table Full Width */}
-      <Card sx={{ boxShadow: 4, borderRadius: 3 }}>
-        <CardHeader title="Users" titleTypographyProps={{ variant: "h5" }} />
+      {/* --- USERS TABLE --- */}
+      <Card className="shadow-md rounded-xl border border-gray-200">
+        <CardHeader title="Users" titleTypographyProps={{ variant: "h6" }} />
         <CardContent>
           <UsersTable editable={false} />
         </CardContent>
       </Card>
-    </Box>
+    </div>
   );
 }

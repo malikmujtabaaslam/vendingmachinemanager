@@ -3,13 +3,10 @@ import "@/css/style.css";
 import "flatpickr/dist/flatpickr.min.css";
 import "jsvectormap/dist/jsvectormap.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "../globals.css"; // keep your global theme after
+import "../globals.css";
 
 import type { Metadata } from "next";
 import NextTopLoader from "nextjs-toploader";
-
-import { Sidebar } from "@/components/Layouts/sidebar";
-import { Header } from "@/components/Layouts/header";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
@@ -27,24 +24,13 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <Providers>
-            {/* Page loading bar */}
-            <NextTopLoader color="#5750F1" showSpinner={false} />
+          {/* Global page loader */}
+          <NextTopLoader color="#5750F1" showSpinner={false} />
 
-            {/* Layout Structure */}
-            <div className="flex min-h-screen">
-              {/* Sidebar (from NextAdmin) */}
-              <Sidebar />
-
-              <div className="flex-1 w-full">
-                {/* Header (from NextAdmin) */}
-                <Header />
-
-                {/* Main content */}
-                <main className="isolate mx-auto w-full max-w-screen-2xl overflow-hidden p-4 md:p-6 2xl:p-10">
-                  {children}
-                </main>
-              </div>
-            </div>
+          {/* Only main content here */}
+          <main className="isolate w-full min-h-screen bg-gray-50 dark:bg-gray-950">
+            {children}
+          </main>
         </Providers>
       </body>
     </html>

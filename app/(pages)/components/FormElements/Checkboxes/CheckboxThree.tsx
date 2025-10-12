@@ -21,7 +21,7 @@ const CheckboxThree = () => {
           <div
             className={`box mr-2 flex h-5 w-5 items-center justify-center rounded border ${
               isChecked
-                ? "border-primary bg-gray-2 dark:bg-transparent"
+                ? "border-primary  dark:bg-transparent"
                 : "border-dark-5 dark:border-dark-6"
             }`}
           >

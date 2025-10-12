@@ -2,7 +2,7 @@
 
 import { useClickOutside } from "@/hooks/use-click-outside";
 import { cn } from "@/app/lib/utils";
-import { SetStateActionType } from "@/types/set-state-action-type";
+import { SetStateActionType } from "@/components/types/set-state-action-type";
 import {
   createContext,
   type PropsWithChildren,

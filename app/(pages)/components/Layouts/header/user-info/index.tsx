@@ -53,7 +53,7 @@ export function UserInfo() {
             width={200}
             height={200}
           />
-          <figcaption className="flex items-center gap-1 font-medium text-dark dark:text-dark-6 max-[1024px]:sr-only">
+          <figcaption className="flex items-center gap-1 font-medium text-dark  max-[1024px]:sr-only">
             <span>{userEmail}</span>
 
             <ChevronUpIcon
@@ -73,9 +73,9 @@ export function UserInfo() {
         align="end"
       >
         <h2 className="sr-only">User information</h2>
-        <div className="p-2 text-base text-[#4B5563] dark:text-dark-6">
+        <div className="p-2 text-base text-[#4B5563] ">
           <button
-            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
+            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover: hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
             onClick={handleLogout}
           >
             <LogOutIcon />

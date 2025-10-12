@@ -12,12 +12,23 @@ import {
   IconButton,
   Typography,
   Alert,
-  Box,
 } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import TerminalIcon from "@mui/icons-material/Terminal";
 import Image from "next/image";
 import JobsTable from "@/app/(pages)/components/JobsTable";
+
+// --- Define TypeScript interfaces ---
+interface Script {
+  id: string;
+  name: string;
+}
+
+interface Machine {
+  id: string;
+  hostname: string;
+  scripts?: Script[];
+}
 
 const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
 
@@ -30,10 +41,10 @@ const fetcher = async (url: string) => {
 };
 
 export default function RunScript() {
-  const { data, error } = useSWR("/api/machines", fetcher, { refreshInterval: 5000 });
+  const { data, error } = useSWR<{ machines: Machine[] }>("/api/machines", fetcher, { refreshInterval: 5000 });
   const { data: jobs, mutate: mutateJobs } = useSWR("/api/jobs", fetcher, { refreshInterval: 5000 });
 
-  const machines = data?.machines || [];
+  const machines: Machine[] = data?.machines || [];
   const jobsData = jobs || [];
 
   const [machine, setMachine] = useState<string | null>(null);
@@ -50,7 +61,7 @@ export default function RunScript() {
     }
   }, [machines]);
 
-  const availableScripts = machines.find((m: any) => m.id === machine)?.scripts || [];
+  const availableScripts: Script[] = machines.find((m) => m.id === machine)?.scripts || [];
 
   async function submitJob() {
     if (!machine || !scriptId) return;
@@ -84,45 +95,22 @@ export default function RunScript() {
 
   return (
     <div className="space-y-6">
-      <Typography
-        variant="h5"
-        sx={{
-          fontWeight: 700,
-          color: "#5750F1",
-          textTransform: "uppercase",
-          mb: 2,
-        }}
-      >
+      <Typography variant="h5" sx={{ fontWeight: 700, color: "#5750F1", textTransform: "uppercase", mb: 2 }}>
         Vending Machines
       </Typography>
 
-      {/* Grid layout: Left (Form) | Right (Jobs Table) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Run Script Form */}
         <div className="lg:col-span-1">
           <div className="p-4 border border-gray-300 rounded-lg shadow-sm bg-white dark:bg-gray-800">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-                Run Script
-              </h2>
-              <IconButton
-                color="info"
-                onClick={() => setHelpOpen(true)}
-                sx={{
-                  border: "1px solid #ccc",
-                  borderRadius: 2,
-                  "&:hover": { backgroundColor: "#f5f5f5" },
-                }}
-              >
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Run Script</h2>
+              <IconButton color="info" onClick={() => setHelpOpen(true)} sx={{ border: "1px solid #ccc", borderRadius: 2, "&:hover": { backgroundColor: "#f5f5f5" } }}>
                 <HelpOutlineIcon fontSize="small" />
               </IconButton>
             </div>
 
             {message && (
-              <Alert
-                severity={message.startsWith("✅") ? "success" : "error"}
-                className="mb-3"
-              >
+              <Alert severity={message.startsWith("✅") ? "success" : "error"} className="mb-3">
                 {message}
               </Alert>
             )}
@@ -136,119 +124,55 @@ export default function RunScript() {
             >
               <Autocomplete
                 options={machines}
-                getOptionLabel={(m: any) => m.hostname || m.id}
-                value={machines.find((m: any) => m.id === machine) || null}
-                onChange={(_, newValue) => {
+                getOptionLabel={(m: Machine) => m.hostname || m.id}
+                value={machines.find((m) => m.id === machine) || null}
+                onChange={(_, newValue: Machine | null) => {
                   setMachine(newValue ? newValue.id : null);
-                  setScriptId(
-                    newValue?.scripts?.length ? newValue.scripts[0].id : null
-                  );
+                  setScriptId(newValue?.scripts?.length ? newValue.scripts[0].id : null);
                 }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Machine"
-                    size="small"
-                    fullWidth
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: "10px",
-                      },
-                    }}
-                  />
-                )}
+                renderInput={(params) => <TextField {...params} label="Select Machine" size="small" fullWidth sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }} />}
               />
 
               <Autocomplete
                 options={availableScripts}
-                getOptionLabel={(s: any) => s.name || ""}
-                value={availableScripts.find((s: any) => s.id === scriptId) || null}
-                onChange={(_, newValue) =>
-                  setScriptId(newValue ? newValue.id : null)
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Select Script"
-                    size="small"
-                    fullWidth
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: "10px",
-                      },
-                    }}
-                  />
-                )}
+                getOptionLabel={(s: Script) => s.name}
+                value={availableScripts.find((s) => s.id === scriptId) || null}
+                onChange={(_, newValue: Script | null) => setScriptId(newValue ? newValue.id : null)}
+                renderInput={(params) => <TextField {...params} label="Select Script" size="small" fullWidth sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }} />}
                 disabled={!machine}
               />
 
-              <Button
-                type="submit"
-                variant="contained"
-                fullWidth
-                sx={{
-                  borderRadius: "10px",
-                  py: 1,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  bgcolor: "#5750F1",
-                  "&:hover": { bgcolor: "#4a43d4" },
-                }}
-              >
+              <Button type="submit" variant="contained" fullWidth sx={{ borderRadius: "10px", py: 1, textTransform: "none", fontWeight: 600, bgcolor: "#5750F1", "&:hover": { bgcolor: "#4a43d4" } }}>
                 Run Script
               </Button>
             </form>
           </div>
         </div>
 
-        {/* Jobs Table */}
         <div className="lg:col-span-2">
           <JobsTable jobs={jobsData} />
         </div>
       </div>
 
-      {/* Confirmation Dialog */}
-      <Dialog
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        PaperProps={{
-          sx: { borderRadius: 3, p: 1.5, bgcolor: "background.paper" },
-        }}
-      >
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} PaperProps={{ sx: { borderRadius: 3, p: 1.5, bgcolor: "background.paper" } }}>
         <DialogTitle sx={{ fontWeight: 600 }}>Confirm Script Run</DialogTitle>
         <DialogContent>
           <Typography>
-            Run <b>{availableScripts.find((s) => s.id === scriptId)?.name}</b> on{" "}
-            <b>{machines.find((m) => m.id === machine)?.hostname}</b>?
+            Run <b>{availableScripts.find((s: Script) => s.id === scriptId)?.name}</b> on{" "}
+            <b>{machines.find((m: Machine) => m.id === machine)?.hostname}</b>?
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmOpen(false)} color="inherit">
             Cancel
           </Button>
-          <Button
-            onClick={() => {
-              setConfirmOpen(false);
-              submitJob();
-            }}
-            variant="contained"
-            sx={{ bgcolor: "#5750F1", "&:hover": { bgcolor: "#4a43d4" } }}
-          >
+          <Button onClick={() => { setConfirmOpen(false); submitJob(); }} variant="contained" sx={{ bgcolor: "#5750F1", "&:hover": { bgcolor: "#4a43d4" } }}>
             Confirm
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Help Dialog */}
-      <Dialog
-        open={helpOpen}
-        onClose={() => setHelpOpen(false)}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          sx: { borderRadius: 3, p: 1.5, bgcolor: "background.paper" },
-        }}
-      >
+      <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 3, p: 1.5, bgcolor: "background.paper" } }}>
         <DialogTitle sx={{ fontWeight: 600, display: "flex", gap: 1, alignItems: "center" }}>
           <TerminalIcon color="action" /> How to Run Scripts
         </DialogTitle>
@@ -264,29 +188,13 @@ export default function RunScript() {
               </ul>
             </div>
             <div className="flex-1 text-center">
-              <Image
-                src="/run-script.png"
-                alt="Run Script Example"
-                width={800}
-                height={300}
-                className="rounded-lg border border-gray-300 shadow-sm mx-auto"
-              />
-              <Typography variant="caption" color="text.secondary">
-                Example of script execution workflow
-              </Typography>
+              <Image src="/run-script.png" alt="Run Script Example" width={800} height={300} className="rounded-lg border border-gray-300 shadow-sm mx-auto" />
+              <Typography variant="caption" color="text.secondary">Example of script execution workflow</Typography>
             </div>
           </div>
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => setHelpOpen(false)}
-            variant="contained"
-            sx={{
-              borderRadius: "10px",
-              bgcolor: "#5750F1",
-              "&:hover": { bgcolor: "#4a43d4" },
-            }}
-          >
+          <Button onClick={() => setHelpOpen(false)} variant="contained" sx={{ borderRadius: "10px", bgcolor: "#5750F1", "&:hover": { bgcolor: "#4a43d4" } }}>
             Close
           </Button>
         </DialogActions>

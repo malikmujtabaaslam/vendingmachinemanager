@@ -46,13 +46,13 @@ export function Checkbox({
               "mr-2 flex size-5 items-center justify-center rounded border border-dark-5 peer-checked:border-primary dark:border-dark-6 peer-checked:[&>*]:block",
               withBg
                 ? "peer-checked:bg-primary [&>*]:text-white"
-                : "peer-checked:bg-gray-2 dark:peer-checked:bg-transparent",
+                : "peer-checked: dark:peer-checked:bg-transparent",
               minimal && "mr-3 border-stroke dark:border-dark-3",
               radius === "md" && "rounded-md",
             )}
           >
             {!withIcon && (
-              <span className="hidden size-2.5 rounded-sm bg-primary" />
+              <span className="hidden .5 rounded-sm bg-primary" />
             )}
 
             {withIcon === "check" && (

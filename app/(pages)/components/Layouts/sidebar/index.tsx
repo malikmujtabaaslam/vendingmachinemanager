@@ -31,7 +31,7 @@ export function Sidebar() {
     NAV_DATA.some((section) =>
       section.items.some((item) =>
         item.items.some((subItem) => {
-          if (subItem.url === pathname) {
+          if ((subItem as any).url === pathname) {
             if (!expandedItems.includes(item.title)) {
               toggleExpanded(item.title);
             }

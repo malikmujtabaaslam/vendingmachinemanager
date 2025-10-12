@@ -1,4 +1,4 @@
-import { IconProps } from "@/types/icon-props";
+import { IconProps } from "@/components/types/icon-props";
 
 export function PreviewIcon(props: IconProps) {
   return (

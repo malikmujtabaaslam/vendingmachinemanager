@@ -117,7 +117,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
                     {selected.map((index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-center rounded-[5px] border-[.5px] border-stroke bg-gray-2 px-2.5 py-[3px] text-body-sm font-medium dark:border-dark-3 dark:bg-dark"
+                        className="flex items-center justify-center rounded-[5px] border-[.5px] border-stroke  px-2.5 py-[3px] text-body-sm font-medium dark:border-dark-3 dark:bg-dark"
                       >
                         <div className="max-w-full flex-initial">
                           {options[index].text}
@@ -151,7 +151,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
                       <div className="flex-1">
                         <input
                           placeholder="Select an option"
-                          className="h-full w-full appearance-none bg-transparent p-1 px-2 text-dark-5 outline-none dark:text-dark-6"
+                          className="h-full w-full appearance-none bg-transparent p-1 px-2  outline-none "
                           defaultValue={selectedValues()}
                         />
                       </div>
@@ -161,7 +161,7 @@ const MultiSelect: React.FC<DropdownProps> = ({ id }) => {
                     <button
                       type="button"
                       onClick={open}
-                      className="cursor-pointer text-dark-4 outline-none focus:outline-none dark:text-dark-6"
+                      className="cursor-pointer text-dark-4 outline-none focus:outline-none "
                     >
                       <svg
                         className="fill-current"

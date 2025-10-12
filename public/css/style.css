@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-gray-2 text-dark-5 dark:bg-[#020D1A] dark:text-dark-6;
+    @apply   dark:bg-[#020D1A] ;
   }
 }
 
@@ -24,7 +24,7 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar {
-    @apply size-2;
+    @apply ;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
@@ -56,7 +56,7 @@
 }
 
 .apexcharts-legend-text {
-  @apply !text-dark-5 dark:!text-dark-6;
+  @apply ! dark:!text-dark-6;
 }
 
 .apexcharts-text {
@@ -192,7 +192,7 @@ span.flatpickr-weekday,
 .flatpickr-day:focus,
 .flatpickr-day.prevMonthDay:focus,
 .flatpickr-day.nextMonthDay:focus {
-  @apply !border-gray-2 !bg-gray-2 dark:!border-dark-2 dark:!bg-dark-2;
+  @apply !border-gray-2 ! dark:!border-dark-2 dark:!bg-dark-2;
 }
 
 .flatpickr-day.selected,
@@ -203,7 +203,7 @@ span.flatpickr-weekday,
 }
 
 .flatpickr-day.today {
-  @apply !border-none hover:!bg-gray-2 hover:!text-dark dark:hover:!bg-dark-2 dark:hover:!text-white;
+  @apply !border-none hover:! hover:!text-dark dark:hover:!bg-dark-2 dark:hover:!text-white;
 }
 
 .flatpickr-day.selected,
@@ -235,7 +235,7 @@ span.flatpickr-weekday,
 }
 
 .map-btn .jvm-zoom-btn {
-  @apply flex h-7.5 w-7.5 items-center justify-center rounded border border-stroke bg-white px-0 pb-0.5 pt-0 text-2xl leading-none text-dark-5 hover:border-primary hover:bg-primary hover:text-white dark:border-dark-3 dark:bg-dark-2 dark:text-dark-6 dark:hover:border-primary dark:hover:bg-primary dark:hover:text-white;
+  @apply flex h-7.5 w-7.5 items-center justify-center rounded border border-stroke bg-white px-0 pb-0.5 pt-0 text-2xl leading-none  hover:border-primary hover:bg-primary hover:text-white dark:border-dark-3 dark:bg-dark-2  dark:hover:border-primary dark:hover:bg-primary dark:hover:text-white;
 }
 
 .mapOne .jvm-zoom-btn {
@@ -300,7 +300,7 @@ span.flatpickr-weekday,
 .carouselOne .swiper-button-prev,
 .carouselThree .swiper-button-next,
 .carouselThree .swiper-button-prev {
-  @apply h-10 w-10 rounded-full bg-white !text-dark-5 shadow-card-2 dark:bg-dark-2 dark:!text-dark-6 sm:h-12.5 sm:w-12.5;
+  @apply h-10 w-10 rounded-full bg-white ! shadow-card-2 dark:bg-dark-2 dark:!text-dark-6 sm:h-12.5 sm:w-12.5;
 }
 
 .carouselOne .swiper-button-prev,
@@ -355,7 +355,7 @@ span.flatpickr-weekday,
 }
 
 .data-table-common .datatable-selector {
-  @apply relative z-20 inline-flex bg-transparent p-0 font-medium text-dark-5 outline-none dark:text-dark-6;
+  @apply relative z-20 inline-flex bg-transparent p-0 font-medium  outline-none ;
 }
 
 .data-table-common .datatable-top {
@@ -421,7 +421,7 @@ span.flatpickr-weekday,
 }
 
 .data-table-common .datatable-pagination a {
-  @apply flex h-8 w-8 cursor-pointer items-center justify-center rounded p-0 font-medium text-dark-5 hover:bg-primary hover:text-white dark:text-dark-6;
+  @apply flex h-8 w-8 cursor-pointer items-center justify-center rounded p-0 font-medium  hover:bg-primary hover:text-white ;
 }
 
 .data-table-common .datatable-pagination .datatable-active a {
@@ -437,7 +437,7 @@ span.flatpickr-weekday,
 }
 
 .data-table-two .datatable-search input {
-  @apply h-11.5 w-full rounded border border-stroke bg-gray-2 px-5 outline-none focus:border-primary dark:border-dark-3 dark:bg-dark-2 dark:focus:border-primary;
+  @apply h-11.5 w-full rounded border border-stroke  px-5 outline-none focus:border-primary dark:border-dark-3 dark:bg-dark-2 dark:focus:border-primary;
 }
 
 .rangeSliderCommon .noUi-target {

@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  /* Keep your palette variables */
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -19,8 +20,15 @@
   }
 }
 
+/* ✅ Let Tailwind / NextAdmin manage page layout colors */
 body {
-  background: var(--background);
+  @apply text-base font-sans antialiased;
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--background);
 }
+
+/* Optional fixes for NextAdmin alignment inside flex layouts */
+main {
+  @apply overflow-x-hidden;
+}
+

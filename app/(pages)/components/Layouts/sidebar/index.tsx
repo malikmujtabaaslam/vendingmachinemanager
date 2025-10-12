@@ -85,18 +85,14 @@ export function Sidebar() {
           <div className="custom-scrollbar mt-8 flex-1 overflow-y-auto pr-3">
             {NAV_DATA.map((section) => (
               <div key={section.label} className="mb-6">
-                <h2 className="mb-4 text-sm font-medium text-gray-500 uppercase tracking-wider">
-                  {section.label}
-                </h2>
-
-                <ul className="space-y-1.5">
+                <ul className="space-y-1.5 p-0">
                   {section.items.map((item) => (
                     <li key={item.title}>
                       <MenuItem
                         as="link"
                         href={item.url}
                         isActive={pathname === item.url}
-                        className="flex flex-row items-center gap-3 py-2"
+                        className="flex flex-row items-center gap-2 py-2"
                       >
                         <item.icon className="size-6 shrink-0" />
                         <span className="text-sm font-medium">{item.title}</span>

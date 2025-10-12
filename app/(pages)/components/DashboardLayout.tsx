@@ -10,21 +10,23 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen">
-      {/* Page loader (keep consistent with global) */}
+    <div className="flex min-h-screen bg-gray-50 dark:bg-[#020d1a]">
+      {/* Page Loader */}
       <NextTopLoader color="#5750F1" showSpinner={false} />
 
-      {/* Sidebar */}
+      {/* Sidebar (collapsible by default in NextAdmin) */}
       <Sidebar />
 
-      {/* Main section */}
-      <div className="flex-1 flex flex-col">
+      {/* Main Content */}
+      <div className="flex flex-col flex-1 w-full">
         {/* Header */}
         <Header />
 
-        {/* Page content */}
-        <main className="isolate mx-auto w-full max-w-screen-2xl overflow-hidden p-4 md:p-6 2xl:p-10">
-          {children}
+        {/* Page Wrapper */}
+        <main className="flex-1 isolate mx-auto w-full max-w-screen-2xl overflow-x-hidden px-4 py-6 md:px-6 lg:px-8 2xl:px-10">
+          <div className="rounded-xl bg-white dark:bg-gray-900 shadow-md border border-gray-200 dark:border-gray-800 p-4 sm:p-6 md:p-8">
+            {children}
+          </div>
         </main>
       </div>
     </div>

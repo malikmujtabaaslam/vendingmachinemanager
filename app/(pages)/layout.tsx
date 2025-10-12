@@ -1,21 +1,22 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "../globals.css";
+import "@/css/satoshi.css";
+import "@/css/style.css";
+import "flatpickr/dist/flatpickr.min.css";
+import "jsvectormap/dist/jsvectormap.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import ClientThemeProvider from "./components/ClientThemeProvider";
+import "../globals.css"; // keep your global theme after
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+import type { Metadata } from "next";
+import NextTopLoader from "nextjs-toploader";
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { Sidebar } from "@/components/Layouts/sidebar";
+import { Header } from "@/components/Layouts/header";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Vending Machine Manager",
+  title: {
+    template: "%s | Vending Machine Manager",
+    default: "Vending Machine Manager",
+  },
   description: "Manage and run scripts on vending machines running Ubuntu.",
 };
 
@@ -23,9 +24,28 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ClientThemeProvider>{children}</ClientThemeProvider>
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <Providers>
+            {/* Page loading bar */}
+            <NextTopLoader color="#5750F1" showSpinner={false} />
+
+            {/* Layout Structure */}
+            <div className="flex min-h-screen">
+              {/* Sidebar (from NextAdmin) */}
+              <Sidebar />
+
+              <div className="flex-1 w-full">
+                {/* Header (from NextAdmin) */}
+                <Header />
+
+                {/* Main content */}
+                <main className="isolate mx-auto w-full max-w-screen-2xl overflow-hidden p-4 md:p-6 2xl:p-10">
+                  {children}
+                </main>
+              </div>
+            </div>
+        </Providers>
       </body>
     </html>
   );

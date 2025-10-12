@@ -12,7 +12,13 @@ import {
   MenuItem,
   CircularProgress,
 } from "@mui/material";
-import { useReactTable, getCoreRowModel, getPaginationRowModel, ColumnDef, flexRender } from "@tanstack/react-table";
+import {
+  useReactTable,
+  getCoreRowModel,
+  getPaginationRowModel,
+  ColumnDef,
+  flexRender,
+} from "@tanstack/react-table";
 import UsersTable from "../../components/UsersTable";
 
 const fetcher = (url: string) =>
@@ -20,7 +26,7 @@ const fetcher = (url: string) =>
     headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
   }).then((res) => res.json());
 
-// Helper: relative time
+// --- Helper: relative time ---
 function formatTime(timestamp: string | null) {
   if (!timestamp) return "-";
   const date = new Date(timestamp);
@@ -37,15 +43,18 @@ function formatTime(timestamp: string | null) {
 }
 
 const statusColors: Record<string, string> = {
-  PENDING: "#f59e0b", // amber
-  RUNNING: "#3b82f6", // blue
-  FAILED: "#ef4444", // red
-  DONE: "#22c55e", // green
+  PENDING: "text-amber-500 bg-amber-100 dark:bg-amber-900/30",
+  RUNNING: "text-blue-500 bg-blue-100 dark:bg-blue-900/30",
+  FAILED: "text-red-500 bg-red-100 dark:bg-red-900/30",
+  DONE: "text-green-500 bg-green-100 dark:bg-green-900/30",
 };
 
 export default function AdminDashboard() {
   const { data: jobs, isLoading: jobsLoading } = useSWR("/api/jobs", fetcher);
-  const { data: agents, isLoading: agentsLoading } = useSWR("/api/machines/unassigned", fetcher);
+  const { data: agents, isLoading: agentsLoading } = useSWR(
+    "/api/machines/unassigned",
+    fetcher
+  );
 
   const [jobSearch, setJobSearch] = useState("");
   const [jobStatusFilter, setJobStatusFilter] = useState("ALL");
@@ -65,7 +74,8 @@ export default function AdminDashboard() {
         const searchMatch =
           job.agent?.hostname?.toLowerCase().includes(jobSearch.toLowerCase()) ||
           job.script?.filename?.toLowerCase().includes(jobSearch.toLowerCase());
-        const statusMatch = jobStatusFilter === "ALL" || job.status === jobStatusFilter;
+        const statusMatch =
+          jobStatusFilter === "ALL" || job.status === jobStatusFilter;
         return searchMatch && statusMatch;
       });
   }, [jobs, jobSearch, jobStatusFilter]);
@@ -77,79 +87,126 @@ export default function AdminDashboard() {
     const now = Date.now();
     return agents.agents.map((agent: any) => ({
       ...agent,
-      online: (now - new Date(agent.updatedAt).getTime()) / 1000 < ONLINE_INTERVAL,
+      online:
+        (now - new Date(agent.updatedAt).getTime()) / 1000 < ONLINE_INTERVAL,
     }));
   }, [agents]);
 
   // --- TABLE COLUMNS ---
-  const jobsColumns = useMemo<ColumnDef<any>[]>(() => [
-    { accessorKey: "id", header: "ID" },
-    { accessorKey: "user.email", header: "User" },
-    { accessorKey: "agent.hostname", header: "Agent" },
-    {
-      accessorKey: "script.filename",
-      header: "Script",
-      cell: (info) => <code>{(info.getValue() as string)?.replace(/\.[^/.]+$/, "")}</code>,
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: (info) => {
-        const status = info.getValue() as string;
-        return (
-          <Typography
-            sx={{
-              fontWeight: 700,
-              color: statusColors[status] || "black",
-              fontSize: "0.85rem",
-            }}
-          >
-            {status}
-          </Typography>
-        );
+  const jobsColumns = useMemo<ColumnDef<any>[]>(
+    () => [
+      { accessorKey: "id", header: "ID" },
+      { accessorKey: "user.email", header: "User" },
+      { accessorKey: "agent.hostname", header: "Agent" },
+      {
+        accessorKey: "script.filename",
+        header: "Script",
+        cell: (info) => (
+          <code className="font-mono text-blue-600 dark:text-blue-400">
+            {(info.getValue() as string)?.replace(/\.[^/.]+$/, "")}
+          </code>
+        ),
       },
-    },
-    { accessorKey: "createdAt", header: "Created", cell: (info) => formatTime(info.getValue() as string | null) },
-    { accessorKey: "completedAt", header: "Completed", cell: (info) => formatTime(info.getValue() as string | null) },
-  ], []);
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: (info) => {
+          const status = info.getValue() as string;
+          return (
+            <span
+              className={`text-xs font-semibold px-2 py-1 rounded-md ${
+                statusColors[status] || "text-gray-700 bg-gray-200 dark:bg-gray-800"
+              }`}
+            >
+              {status}
+            </span>
+          );
+        },
+      },
+      {
+        accessorKey: "createdAt",
+        header: "Created",
+        cell: (info) => formatTime(info.getValue() as string | null),
+      },
+      {
+        accessorKey: "completedAt",
+        header: "Completed",
+        cell: (info) => formatTime(info.getValue() as string | null),
+      },
+    ],
+    []
+  );
 
-  const agentsColumns = useMemo<ColumnDef<any>[]>(() => [
-    { accessorKey: "hostname", header: "Hostname" },
-    { accessorKey: "createdAt", header: "Registered", cell: (info) => formatTime(info.getValue() as string | null) },
-    {
-      accessorKey: "online",
-      header: "Status",
-      cell: (info) => (
-        <div className="flex items-center gap-2">
-          <span
-            className={`w-2.5 h-2.5 rounded-full ${
-              info.getValue() ? "bg-green-500" : "bg-red-500"
-            }`}
-          ></span>
-          {info.getValue() ? "Online" : "Offline"}
-        </div>
-      ),
-    },
-  ], []);
+  const agentsColumns = useMemo<ColumnDef<any>[]>(
+    () => [
+      { accessorKey: "hostname", header: "Hostname" },
+      {
+        accessorKey: "createdAt",
+        header: "Registered",
+        cell: (info) => formatTime(info.getValue() as string | null),
+      },
+      {
+        accessorKey: "online",
+        header: "Status",
+        cell: (info) => (
+          <div className="flex items-center gap-2">
+            <span
+              className={`w-2.5 h-2.5 rounded-full ${
+                info.getValue() ? "bg-green-500" : "bg-red-500"
+              }`}
+            ></span>
+            {info.getValue() ? "Online" : "Offline"}
+          </div>
+        ),
+      },
+    ],
+    []
+  );
 
-  const jobsTable = useReactTable({ data: jobsData, columns: jobsColumns, getCoreRowModel: getCoreRowModel(), getPaginationRowModel: getPaginationRowModel() });
-  const agentsTable = useReactTable({ data: unassignedAgents, columns: agentsColumns, getCoreRowModel: getCoreRowModel(), getPaginationRowModel: getPaginationRowModel() });
+  const jobsTable = useReactTable({
+    data: jobsData,
+    columns: jobsColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const agentsTable = useReactTable({
+    data: unassignedAgents,
+    columns: agentsColumns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
 
   return (
     <div className="space-y-6">
-      {/* --- JOBS + UNASSIGNED --- */}
+      <Typography
+        variant="h5"
+        sx={{
+          fontWeight: 700,
+          color: "#5750F1",
+          mb: 2,
+        }}
+      >
+        Admin Dashboard
+      </Typography>
+
+      {/* JOBS + MACHINES */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Jobs (2/3 width) */}
-        <Card className="lg:col-span-2 shadow-md rounded-xl border border-gray-200">
-          <CardHeader title="All Jobs" titleTypographyProps={{ variant: "h6" }} />
+        {/* Jobs Table */}
+        <Card className="lg:col-span-2 bg-white dark:bg-[#0d1725] border border-gray-200 dark:border-gray-800 shadow-sm rounded-xl">
+          <CardHeader title="All Jobs" />
           <CardContent>
-            <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+            <Box className="flex gap-3 mb-4">
               <TextField
                 placeholder="Search Machine/Script"
                 size="small"
                 fullWidth
                 value={jobSearch}
                 onChange={(e) => setJobSearch(e.target.value)}
+                sx={{
+                  backgroundColor: "white",
+                  borderRadius: "8px",
+                }}
               />
               <Select
                 size="small"
@@ -169,14 +226,20 @@ export default function AdminDashboard() {
                 <CircularProgress />
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left border-collapse border border-gray-200">
-                  <thead className="bg-gray-100 text-gray-700">
+              <div className="overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-800">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 dark:bg-gray-900/40 text-gray-600 dark:text-gray-300">
                     {jobsTable.getHeaderGroups().map((group) => (
                       <tr key={group.id}>
                         {group.headers.map((header) => (
-                          <th key={header.id} className="px-3 py-2 font-medium border-b border-gray-200">
-                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          <th
+                            key={header.id}
+                            className="px-4 py-2 font-semibold border-b border-gray-100 dark:border-gray-800"
+                          >
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                           </th>
                         ))}
                       </tr>
@@ -184,13 +247,29 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {jobsTable.getRowModel().rows.length === 0 ? (
-                      <tr><td colSpan={jobsColumns.length} className="text-center py-4 text-gray-500">No jobs found.</td></tr>
+                      <tr>
+                        <td
+                          colSpan={jobsColumns.length}
+                          className="text-center py-6 text-gray-400"
+                        >
+                          No jobs found
+                        </td>
+                      </tr>
                     ) : (
                       jobsTable.getRowModel().rows.map((row) => (
-                        <tr key={row.id} className="hover:bg-gray-50">
+                        <tr
+                          key={row.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+                        >
                           {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} className="px-3 py-2 border-b border-gray-100">
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            <td
+                              key={cell.id}
+                              className="px-4 py-2 border-b border-gray-100 dark:border-gray-800"
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
                             </td>
                           ))}
                         </tr>
@@ -204,22 +283,28 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Unassigned Machines */}
-        <Card className="shadow-md rounded-xl border border-gray-200">
-          <CardHeader title="Unassigned Machines" titleTypographyProps={{ variant: "h6" }} />
+        <Card className="bg-white dark:bg-[#0d1725] border border-gray-200 dark:border-gray-800 shadow-sm rounded-xl">
+          <CardHeader title="Unassigned Machines" />
           <CardContent>
             {agentsLoading ? (
               <div className="flex justify-center py-6">
                 <CircularProgress />
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left border-collapse border border-gray-200">
-                  <thead className="bg-gray-100 text-gray-700">
+              <div className="overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-800">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-gray-50 dark:bg-gray-900/40 text-gray-600 dark:text-gray-300">
                     {agentsTable.getHeaderGroups().map((group) => (
                       <tr key={group.id}>
                         {group.headers.map((header) => (
-                          <th key={header.id} className="px-3 py-2 font-medium border-b border-gray-200">
-                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          <th
+                            key={header.id}
+                            className="px-4 py-2 font-semibold border-b border-gray-100 dark:border-gray-800"
+                          >
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                           </th>
                         ))}
                       </tr>
@@ -227,13 +312,29 @@ export default function AdminDashboard() {
                   </thead>
                   <tbody>
                     {agentsTable.getRowModel().rows.length === 0 ? (
-                      <tr><td colSpan={agentsColumns.length} className="text-center py-4 text-gray-500">No unassigned machines.</td></tr>
+                      <tr>
+                        <td
+                          colSpan={agentsColumns.length}
+                          className="text-center py-6 text-gray-400"
+                        >
+                          No unassigned machines
+                        </td>
+                      </tr>
                     ) : (
                       agentsTable.getRowModel().rows.map((row) => (
-                        <tr key={row.id} className="hover:bg-gray-50">
+                        <tr
+                          key={row.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors"
+                        >
                           {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} className="px-3 py-2 border-b border-gray-100">
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            <td
+                              key={cell.id}
+                              className="px-4 py-2 border-b border-gray-100 dark:border-gray-800"
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext()
+                              )}
                             </td>
                           ))}
                         </tr>
@@ -247,9 +348,9 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* --- USERS TABLE --- */}
-      <Card className="shadow-md rounded-xl border border-gray-200">
-        <CardHeader title="Users" titleTypographyProps={{ variant: "h6" }} />
+      {/* USERS TABLE */}
+      <Card className="bg-white dark:bg-[#0d1725] border border-gray-200 dark:border-gray-800 shadow-sm rounded-xl">
+        <CardHeader title="Users" />
         <CardContent>
           <UsersTable editable={false} />
         </CardContent>

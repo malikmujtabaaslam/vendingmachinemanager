@@ -9,16 +9,34 @@ import {
 import { cn } from "@/app/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LogOutIcon, SettingsIcon, UserIcon } from "./icons";
 
 export function UserInfo() {
   const [isOpen, setIsOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const email = localStorage.getItem("email");
+    if (email) setUserEmail(email);
+  }, []);
+
+  const handleLogout = () => {
+    // Clear cookie
+    document.cookie = "token=; path=/; secure; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    // Clear localStorage
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("email");
+    // Redirect
+    window.location.href = "/login";
+  };
 
   const USER = {
-    name: "John Smith",
+    name: "John Smisasasth",
     email: "johnson@nextadmin.com",
-    img: "/images/user/user-03.png",
+    img: "/images/user/user.png",
   };
 
   return (
@@ -30,13 +48,13 @@ export function UserInfo() {
           <Image
             src={USER.img}
             className="size-12"
-            alt={`Avatar of ${USER.name}`}
+            alt={`Avatar of ${userEmail}`}
             role="presentation"
             width={200}
             height={200}
           />
           <figcaption className="flex items-center gap-1 font-medium text-dark dark:text-dark-6 max-[1024px]:sr-only">
-            <span>{USER.name}</span>
+            <span>{userEmail}</span>
 
             <ChevronUpIcon
               aria-hidden
@@ -55,58 +73,10 @@ export function UserInfo() {
         align="end"
       >
         <h2 className="sr-only">User information</h2>
-
-        <figure className="flex items-center gap-2.5 px-5 py-3.5">
-          <Image
-            src={USER.img}
-            className="size-12"
-            alt={`Avatar for ${USER.name}`}
-            role="presentation"
-            width={200}
-            height={200}
-          />
-
-          <figcaption className="space-y-1 text-base font-medium">
-            <div className="mb-2 leading-none text-dark dark:text-white">
-              {USER.name}
-            </div>
-
-            <div className="leading-none text-gray-6">{USER.email}</div>
-          </figcaption>
-        </figure>
-
-        <hr className="border-[#E8E8E8] dark:border-dark-3" />
-
-        <div className="p-2 text-base text-[#4B5563] dark:text-dark-6 [&>*]:cursor-pointer">
-          <Link
-            href={"/profile"}
-            onClick={() => setIsOpen(false)}
-            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
-          >
-            <UserIcon />
-
-            <span className="mr-auto text-base font-medium">View profile</span>
-          </Link>
-
-          <Link
-            href={"/pages/settings"}
-            onClick={() => setIsOpen(false)}
-            className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
-          >
-            <SettingsIcon />
-
-            <span className="mr-auto text-base font-medium">
-              Account Settings
-            </span>
-          </Link>
-        </div>
-
-        <hr className="border-[#E8E8E8] dark:border-dark-3" />
-
         <div className="p-2 text-base text-[#4B5563] dark:text-dark-6">
           <button
             className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[9px] hover:bg-gray-2 hover:text-dark dark:hover:bg-dark-3 dark:hover:text-white"
-            onClick={() => setIsOpen(false)}
+            onClick={handleLogout}
           >
             <LogOutIcon />
 

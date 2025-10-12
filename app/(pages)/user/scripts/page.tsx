@@ -99,108 +99,112 @@ export default function RunScript() {
       {/* Grid layout: Left (Form) | Right (Jobs Table) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Run Script Form */}
-        <div className="lg:col-span-1 bg-white dark:bg-[#081325] border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-              Run Script
-            </h2>
-            <IconButton
-              color="info"
-              onClick={() => setHelpOpen(true)}
-              sx={{
-                border: "1px solid #ccc",
-                borderRadius: 2,
-                "&:hover": { backgroundColor: "#f5f5f5" },
+        <div className="lg:col-span-1">
+          <div className="p-4 border border-gray-300 rounded-lg shadow-sm bg-white dark:bg-gray-800">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                Run Script
+              </h2>
+              <IconButton
+                color="info"
+                onClick={() => setHelpOpen(true)}
+                sx={{
+                  border: "1px solid #ccc",
+                  borderRadius: 2,
+                  "&:hover": { backgroundColor: "#f5f5f5" },
+                }}
+              >
+                <HelpOutlineIcon fontSize="small" />
+              </IconButton>
+            </div>
+
+            {message && (
+              <Alert
+                severity={message.startsWith("✅") ? "success" : "error"}
+                className="mb-3"
+              >
+                {message}
+              </Alert>
+            )}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setConfirmOpen(true);
               }}
+              className="flex flex-col gap-4"
             >
-              <HelpOutlineIcon fontSize="small" />
-            </IconButton>
+              <Autocomplete
+                options={machines}
+                getOptionLabel={(m: any) => m.hostname || m.id}
+                value={machines.find((m: any) => m.id === machine) || null}
+                onChange={(_, newValue) => {
+                  setMachine(newValue ? newValue.id : null);
+                  setScriptId(
+                    newValue?.scripts?.length ? newValue.scripts[0].id : null
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Select Machine"
+                    size="small"
+                    fullWidth
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "10px",
+                      },
+                    }}
+                  />
+                )}
+              />
+
+              <Autocomplete
+                options={availableScripts}
+                getOptionLabel={(s: any) => s.name || ""}
+                value={availableScripts.find((s: any) => s.id === scriptId) || null}
+                onChange={(_, newValue) =>
+                  setScriptId(newValue ? newValue.id : null)
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Select Script"
+                    size="small"
+                    fullWidth
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "10px",
+                      },
+                    }}
+                  />
+                )}
+                disabled={!machine}
+              />
+
+              <Button
+                type="submit"
+                variant="contained"
+                fullWidth
+                sx={{
+                  borderRadius: "10px",
+                  py: 1,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  bgcolor: "#5750F1",
+                  "&:hover": { bgcolor: "#4a43d4" },
+                }}
+              >
+                Run Script
+              </Button>
+            </form>
           </div>
-
-          {message && (
-            <Alert
-              severity={message.startsWith("✅") ? "success" : "error"}
-              className="mb-3"
-            >
-              {message}
-            </Alert>
-          )}
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              setConfirmOpen(true);
-            }}
-            className="flex flex-col gap-4"
-          >
-            <Autocomplete
-              options={machines}
-              getOptionLabel={(m: any) => m.hostname || m.id}
-              value={machines.find((m: any) => m.id === machine) || null}
-              onChange={(_, newValue) => {
-                setMachine(newValue ? newValue.id : null);
-                setScriptId(
-                  newValue?.scripts?.length ? newValue.scripts[0].id : null
-                );
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Machine"
-                  size="small"
-                  fullWidth
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: "10px",
-                    },
-                  }}
-                />
-              )}
-            />
-
-            <Autocomplete
-              options={availableScripts}
-              getOptionLabel={(s: any) => s.name || ""}
-              value={availableScripts.find((s: any) => s.id === scriptId) || null}
-              onChange={(_, newValue) =>
-                setScriptId(newValue ? newValue.id : null)
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Script"
-                  size="small"
-                  fullWidth
-                  sx={{
-                    "& .MuiOutlinedInput-root": {
-                      borderRadius: "10px",
-                    },
-                  }}
-                />
-              )}
-              disabled={!machine}
-            />
-
-            <Button
-              type="submit"
-              variant="contained"
-              fullWidth
-              sx={{
-                borderRadius: "10px",
-                py: 1,
-                textTransform: "none",
-                fontWeight: 600,
-                bgcolor: "#5750F1",
-                "&:hover": { bgcolor: "#4a43d4" },
-              }}
-            >
-              Run Script
-            </Button>
-          </form>
         </div>
 
         {/* Jobs Table */}
-        <JobsTable jobs={jobsData} />
+        <div className="lg:col-span-2">
+          <JobsTable jobs={jobsData} />
+        </div>
       </div>
 
       {/* Confirmation Dialog */}

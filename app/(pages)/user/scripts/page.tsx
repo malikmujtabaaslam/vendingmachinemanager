@@ -2,10 +2,6 @@
 import { useState, useEffect } from "react";
 import useSWR from "swr";
 import {
-  Box,
-  Card,
-  CardHeader,
-  CardContent,
   Button,
   TextField,
   Autocomplete,
@@ -19,11 +15,22 @@ import {
 } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 import TerminalIcon from "@mui/icons-material/Terminal";
-import JobsTable from "@/app/(pages)/components/JobsTable";
 import Image from "next/image";
+import JobsTable from "@/app/(pages)/components/JobsTable";
 
-const token =
-  typeof window !== "undefined" ? localStorage.getItem("token") : "";
+// --- Define TypeScript interfaces ---
+interface Script {
+  id: string;
+  name: string;
+}
+
+interface Machine {
+  id: string;
+  hostname: string;
+  scripts?: Script[];
+}
+
+const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
 
 const fetcher = async (url: string) => {
   const res = await fetch(url, {
@@ -34,40 +41,30 @@ const fetcher = async (url: string) => {
 };
 
 export default function RunScript() {
-  const { data, error } = useSWR("/api/machines", fetcher, {
-    refreshInterval: 5000,
-  });
+  const { data, error } = useSWR<{ machines: Machine[] }>("/api/machines", fetcher, { refreshInterval: 5000 });
+  const { data: jobs, mutate: mutateJobs } = useSWR("/api/jobs", fetcher, { refreshInterval: 5000 });
 
-  const { data: jobs, mutate: mutateJobs } = useSWR("/api/jobs", fetcher, {
-    refreshInterval: 5000,
-  });
-
-  const machines = data?.machines || [];
+  const machines: Machine[] = data?.machines || [];
   const jobsData = jobs || [];
 
   const [machine, setMachine] = useState<string | null>(null);
   const [scriptId, setScriptId] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [message, setMessage] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [message, setMessage] = useState("");
 
-  // Set default machine and script
   useEffect(() => {
     if (machines.length) {
       const firstMachine = machines[0];
       setMachine(firstMachine.id);
-      if (firstMachine.scripts?.length) {
-        setScriptId(firstMachine.scripts[0].id);
-      }
+      if (firstMachine.scripts?.length) setScriptId(firstMachine.scripts[0].id);
     }
   }, [machines]);
 
-  const availableScripts =
-    machines.find((m: any) => m.id === machine)?.scripts || [];
+  const availableScripts: Script[] = machines.find((m) => m.id === machine)?.scripts || [];
 
   async function submitJob() {
     if (!machine || !scriptId) return;
-
     try {
       const res = await fetch("/api/jobs", {
         method: "POST",
@@ -78,21 +75,18 @@ export default function RunScript() {
         body: JSON.stringify({ scriptId }),
       });
 
+      const data = await res.json();
       if (res.ok) {
-        setMessage("✅ Script scheduled for run successfully!");
-        mutateJobs(); // refresh jobs table
-        setTimeout(() => setMessage(""), 5000);
+        setMessage("✅ Script scheduled successfully!");
+        mutateJobs();
       } else {
-        const data = await res.json();
-        setMessage(
-          `❌ Failed to schedule script: ${data.error || "Unknown error"}`
-        );
-        setTimeout(() => setMessage(""), 5000);
+        setMessage(`❌ Failed: ${data.error || "Unknown error"}`);
       }
     } catch (err) {
       console.error(err);
       setMessage("❌ Error scheduling script");
-      setTimeout(() => setMessage(""), 5000);
+    } finally {
+      setTimeout(() => setMessage(""), 4000);
     }
   }
 
@@ -100,223 +94,111 @@ export default function RunScript() {
   if (!data) return <div>Loading...</div>;
 
   return (
-    <Box sx={{ mx: 4, mt: 3 }}>
-      <Typography
-        variant="h5"
-        sx={{
-          mb: 3,
-          fontWeight: 700,
-          color: "primary.main",
-          textTransform: "uppercase",
-        }}
-      >
+    <div className="space-y-6">
+      <Typography variant="h5" sx={{ fontWeight: 700, color: "#5750F1", textTransform: "uppercase", mb: 2 }}>
         Vending Machines
       </Typography>
 
-      {/* Horizontal layout: Form (30%) | Jobs Table (70%) */}
-      <Box sx={{ display: "flex", gap: 3 }}>
-        {/* Left: Run Script Form */}
-        <Box sx={{ flex: "0 0 30%" }}>
-          <Card sx={{ borderRadius: 3, boxShadow: 4 }}>
-            <CardHeader
-              title="Run Script"
-              titleTypographyProps={{ variant: "h6" }}
-              action={
-                <IconButton
-                  color="info"
-                  onClick={() => setHelpOpen(true)}
-                  sx={{ border: "1px solid #ccc", borderRadius: 2 }}
-                >
-                  <HelpOutlineIcon />
-                </IconButton>
-              }
-            />
-            <CardContent>
-              {message && (
-                <Alert
-                  severity={message.startsWith("✅") ? "success" : "error"}
-                  sx={{ mb: 2 }}
-                >
-                  {message}
-                </Alert>
-              )}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setConfirmOpen(true);
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-1">
+          <div className="p-4 border border-gray-300 rounded-lg shadow-sm bg-white dark:bg-gray-800">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">Run Script</h2>
+              <IconButton color="info" onClick={() => setHelpOpen(true)} sx={{ border: "1px solid #ccc", borderRadius: 2, "&:hover": { backgroundColor: "#f5f5f5" } }}>
+                <HelpOutlineIcon fontSize="small" />
+              </IconButton>
+            </div>
+
+            {message && (
+              <Alert severity={message.startsWith("✅") ? "success" : "error"} className="mb-3">
+                {message}
+              </Alert>
+            )}
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setConfirmOpen(true);
+              }}
+              className="flex flex-col gap-4"
+            >
+              <Autocomplete
+                options={machines}
+                getOptionLabel={(m: Machine) => m.hostname || m.id}
+                value={machines.find((m) => m.id === machine) || null}
+                onChange={(_, newValue: Machine | null) => {
+                  setMachine(newValue ? newValue.id : null);
+                  setScriptId(newValue?.scripts?.length ? newValue.scripts[0].id : null);
                 }}
-              >
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <Autocomplete
-                    options={machines}
-                    getOptionLabel={(m: any) => m.hostname || m.id}
-                    value={machines.find((m: any) => m.id === machine) || null}
-                    onChange={(_, newValue) => {
-                      setMachine(newValue ? newValue.id : null);
-                      setScriptId(
-                        newValue?.scripts?.length
-                          ? newValue.scripts[0].id
-                          : null
-                      );
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Select Machine"
-                        size="small"
-                        fullWidth
-                      />
-                    )}
-                  />
-                  <Autocomplete
-                    options={availableScripts}
-                    getOptionLabel={(s: any) => s.name || ""}
-                    value={
-                      availableScripts.find((s: any) => s.id === scriptId) ||
-                      null
-                    }
-                    onChange={(_, newValue) =>
-                      setScriptId(newValue ? newValue.id : null)
-                    }
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        label="Select Script"
-                        size="small"
-                        fullWidth
-                      />
-                    )}
-                    disabled={!machine}
-                  />
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                  >
-                    Run
-                  </Button>
-                </Box>
-              </form>
-            </CardContent>
-          </Card>
-        </Box>
+                renderInput={(params) => <TextField {...params} label="Select Machine" size="small" fullWidth sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }} />}
+              />
 
-        {/* Right: Jobs Table */}
-        <Box sx={{ flex: "0 0 70%" }}>
+              <Autocomplete
+                options={availableScripts}
+                getOptionLabel={(s: Script) => s.name}
+                value={availableScripts.find((s) => s.id === scriptId) || null}
+                onChange={(_, newValue: Script | null) => setScriptId(newValue ? newValue.id : null)}
+                renderInput={(params) => <TextField {...params} label="Select Script" size="small" fullWidth sx={{ "& .MuiOutlinedInput-root": { borderRadius: "10px" } }} />}
+                disabled={!machine}
+              />
+
+              <Button type="submit" variant="contained" fullWidth sx={{ borderRadius: "10px", py: 1, textTransform: "none", fontWeight: 600, bgcolor: "#5750F1", "&:hover": { bgcolor: "#4a43d4" } }}>
+                Run Script
+              </Button>
+            </form>
+          </div>
+        </div>
+
+        <div className="lg:col-span-2">
           <JobsTable jobs={jobsData} />
-        </Box>
-      </Box>
+        </div>
+      </div>
 
-      {/* Confirmation Dialog */}
-      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
-        <DialogTitle>Confirm Run</DialogTitle>
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} PaperProps={{ sx: { borderRadius: 3, p: 1.5, bgcolor: "background.paper" } }}>
+        <DialogTitle sx={{ fontWeight: 600 }}>Confirm Script Run</DialogTitle>
         <DialogContent>
           <Typography>
-            Do you want to run{" "}
-            <b>
-              {availableScripts.find((s: any) => s.id === scriptId)?.name ||
-                "selected script"}
-            </b>{" "}
-            script on{" "}
-            <b>
-              {machines.find((m: any) => m.id === machine)?.hostname ||
-                "selected machine"}
-            </b>{" "}
-            machine?
+            Run <b>{availableScripts.find((s: Script) => s.id === scriptId)?.name}</b> on{" "}
+            <b>{machines.find((m: Machine) => m.id === machine)?.hostname}</b>?
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)} color="secondary">
+          <Button onClick={() => setConfirmOpen(false)} color="inherit">
             Cancel
           </Button>
-          <Button
-            onClick={() => {
-              setConfirmOpen(false);
-              submitJob();
-            }}
-            color="primary"
-            variant="contained"
-          >
-            Yes, Run
+          <Button onClick={() => { setConfirmOpen(false); submitJob(); }} variant="contained" sx={{ bgcolor: "#5750F1", "&:hover": { bgcolor: "#4a43d4" } }}>
+            Confirm
           </Button>
         </DialogActions>
       </Dialog>
 
-
-      {/* Documentation Dialog */}
-      <Dialog
-        open={helpOpen}
-        onClose={() => setHelpOpen(false)}
-        maxWidth="xl"
-        fullWidth
-      >
-        <DialogTitle>
-          <TerminalIcon color="action" /> User Guide: Running Scripts
+      <Dialog open={helpOpen} onClose={() => setHelpOpen(false)} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 3, p: 1.5, bgcolor: "background.paper" } }}>
+        <DialogTitle sx={{ fontWeight: 600, display: "flex", gap: 1, alignItems: "center" }}>
+          <TerminalIcon color="action" /> How to Run Scripts
         </DialogTitle>
         <DialogContent dividers>
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              gap: 2,
-            }}
-          >
-            <Box>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 2 }}
-              >
-                Follow these simple steps to run a script on your assigned
-                machine:
-              </Typography>
-              <ul>
-                <li>
-                  Select your <b>machine</b> from the first dropdown.
-                </li>
-                <li>
-                  Choose a <b>script</b> from the second dropdown.
-                </li>
-                <li>
-                  Click the <b>Run</b> button to submit the job.
-                </li>
-                <li>
-                  Your request will appear as <b>Pending</b> in the table.
-                </li>
-                <li>
-                  The <b>Output</b> column shows if it succeeded or failed.
-                </li>
+          <div className="flex flex-col md:flex-row gap-6 items-start">
+            <div className="space-y-3 text-gray-700 dark:text-gray-300 text-sm">
+              <p>Follow these steps to execute scripts securely:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>Select your <b>machine</b> from the dropdown.</li>
+                <li>Choose the desired <b>script</b>.</li>
+                <li>Click <b>Run Script</b> to schedule execution.</li>
+                <li>Status will appear under <b>Recent Jobs</b>.</li>
               </ul>
-            </Box>
-            <Box sx={{ flex: 1, textAlign: "center" }}>
-              <Image
-                src="/run-script.png"
-                alt="Run Scripts panel screenshot"
-                width={800}
-                height={300}
-                style={{
-                  borderRadius: "8px",
-                  border: "1px solid #ddd",
-                  maxWidth: "100%",
-                }}
-              />
-              <Typography variant="caption" color="text.secondary">
-                Example of the "Run Scripts" panel
-              </Typography>
-            </Box>
-          </Box>
+            </div>
+            <div className="flex-1 text-center">
+              <Image src="/run-script.png" alt="Run Script Example" width={800} height={300} className="rounded-lg border border-gray-300 shadow-sm mx-auto" />
+              <Typography variant="caption" color="text.secondary">Example of script execution workflow</Typography>
+            </div>
+          </div>
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => setHelpOpen(false)}
-            variant="contained"
-            color="primary"
-          >
+          <Button onClick={() => setHelpOpen(false)} variant="contained" sx={{ borderRadius: "10px", bgcolor: "#5750F1", "&:hover": { bgcolor: "#4a43d4" } }}>
             Close
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </div>
   );
 }

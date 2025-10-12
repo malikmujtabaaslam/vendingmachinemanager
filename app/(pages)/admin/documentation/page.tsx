@@ -1,15 +1,8 @@
 "use client";
-import useSWR from "swr";
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-  CardHeader,
-} from "@mui/material";
-import DownloadIcon from "@mui/icons-material/Download";
-import DescriptionIcon from "@mui/icons-material/Description";
+
 import { useState } from "react";
+import { Card, CardContent, Typography, CardHeader, Box } from "@mui/material";
+import DownloadIcon from "@mui/icons-material/Download";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
 import TerminalIcon from "@mui/icons-material/Terminal";
@@ -20,23 +13,20 @@ import Image from "next/image";
 
 export default function Documentation() {
   return (
-    <Box sx={{ p: { xs: 1, md: 3 } }}>
-      
+    <div className="space-y-6">
       <Typography
         variant="h5"
         sx={{
-          mb: 3,
           fontWeight: 700,
-          color: "primary.main",
-          fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif", // or use Google Font
-          textTransform: "uppercase",
+          color: "#5750F1",
+          mb: 2,
         }}
       >
         Documentation
       </Typography>
-
-      {/* Download Script Card */}
-      <Card sx={{ boxShadow: 3, borderRadius: 2, mb: 3 }}>
+      
+      {/* ========== Register Machine Section ========== */}
+      <Card className="shadow-md rounded-xl border border-gray-200 bg-white dark:bg-[#0b1324]">
         <CardHeader
           title="Register a New Machine"
           subheader="Setup instructions for onboarding a new Ubuntu system"
@@ -47,428 +37,206 @@ export default function Documentation() {
           }}
         />
         <CardContent>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {/* Description */}
-            <Typography variant="body2" color="text.secondary">
+          <div className="flex flex-col gap-3 text-gray-700 dark:text-gray-300">
+            <Typography variant="body2">
               The <b>register.sh</b> script securely connects a new Ubuntu
               machine to the dashboard. It automatically sends the machine’s
-              hostname and ID to the server and marks it as <b>active</b> for
-              assignment.
+              hostname and ID to the server and marks it as{" "}
+              <b>active</b> for assignment.
             </Typography>
 
-            {/* Steps */}
-            <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+            <Typography variant="subtitle2" className="font-semibold">
               How to use:
             </Typography>
-            <ol
-              style={{ margin: 0, paddingLeft: "1.2rem", color: "#555" }}
-            >
-              <li>Download the script from the button below.</li>
-              <li>Copy it to the Ubuntu machine you want to register.</li>
-              <li>Run the following commands in your terminal:</li>
+            <ol className="list-decimal ml-5 space-y-1">
+              <li>Download the script below.</li>
+              <li>Copy it to the target Ubuntu machine.</li>
+              <li>Run the following commands:</li>
             </ol>
 
-            {/* Terminal-like commands with copy button */}
-            <Box
-              component={motion.div}
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              sx={{
-                backgroundColor: "#111",
-                color: "#0f0",
-                fontFamily: "monospace",
-                fontSize: "0.85rem",
-                p: 2,
-                borderRadius: 1,
-                position: "relative",
-                mb: 1,
-              }}
+              className="relative bg-[#111] text-[#0f0] font-mono text-sm p-3 rounded-md my-2"
             >
-              {["chmod +x ./register.sh", "sudo ./register.sh"].map(
-                (cmd, i) => (
-                  <Typography key={i} sx={{ mb: 0.5 }}>
-                    $ {cmd}
-                  </Typography>
-                )
-              )}
+              <div>$ chmod +x ./register.sh</div>
+              <div>$ sudo ./register.sh</div>
+              <CopyButton text={`chmod +x ./register.sh\nsudo ./register.sh`} />
+            </motion.div>
 
-              {/* Copy to clipboard */}
-              <CopyButton
-                text={`chmod +x ./register.sh\nsudo ./register.sh`}
-              />
-            </Box>
-
-            <Typography variant="body2" color="text.secondary">
-              Once successful, the machine will appear in the dashboard as{" "}
+            <Typography variant="body2">
+              Once successful, the machine will appear as{" "}
               <i>unassigned</i> until linked to a user.
             </Typography>
 
-            {/* Download Button */}
-            <Box>
-              <a
-                href="/register.sh"
-                download
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  textDecoration: "none",
-                  padding: "8px 14px",
-                  backgroundColor: "#1976d2",
-                  color: "#fff",
-                  borderRadius: "6px",
-                  fontWeight: 500,
-                  fontSize: "0.9rem",
-                  transition: "background-color 0.2s",
-                }}
-                onMouseOver={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#1565c0")
-                }
-                onMouseOut={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#1976d2")
-                }
-              >
-                <DownloadIcon fontSize="small" />
-                Download Script
-              </a>
-            </Box>
-          </Box>
+            <a
+              target="_blank"
+              href="/register.sh"
+              download
+              className="inline-flex items-center gap-2 bg-[#5750F1] hover:bg-[#4338ca] text-white px-4 py-2 rounded-md text-sm font-medium w-fit transition-colors"
+            >
+              <DownloadIcon fontSize="small" />
+              Download Script
+            </a>
+          </div>
         </CardContent>
       </Card>
 
-      {/* Add User & Assign Machine Card */}
-      <Card sx={{ boxShadow: 3, borderRadius: 2, mb: 3 }}>
+      {/* ========== Add User & Assign Machines Section ========== */}
+      <Card className="shadow-md rounded-xl border border-gray-200 bg-white dark:bg-[#0b1324]">
         <CardContent>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          <div className="flex items-center gap-2 mb-3">
             <PersonAddAltIcon color="action" />
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant="body1" className="font-semibold">
               Adding Users & Machines
             </Typography>
-          </Box>
+          </div>
 
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              gap: 2,
-              alignItems: "flex-start",
-            }}
-          >
-            {/* Screenshot + legend on the left */}
-            <Box sx={{ flex: 1, textAlign: "center" }}>
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Left - Image */}
+            <div className="flex-1 text-center">
               <Image
                 src="/script-status.png"
-                alt="Admin Users page screenshot"
-                width={808}
+                alt="Users page screenshot"
+                width={800}
                 height={300}
-                style={{
-                  borderRadius: "8px",
-                  border: "1px solid #ddd",
-                  maxWidth: "100%",
-                  height: "auto",
-                }}
+                className="rounded-lg border border-gray-200 dark:border-gray-700 mx-auto"
               />
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ display: "block", mt: 1 }}
+                className="block mt-2"
               >
                 Example of the Users page
               </Typography>
-            </Box>
+            </div>
 
-            {/* Instructions on the right */}
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 2 }}
-              >
+            {/* Right - Instructions */}
+            <div className="flex-1 text-gray-700 dark:text-gray-300">
+              <Typography variant="body2" className="mb-2">
                 On the <b>Users</b> page, you can create accounts and link
-                machines to them. Here’s how:
+                machines to them:
               </Typography>
 
-              <ol
-                style={{
-                  margin: 0,
-                  paddingLeft: "1.2rem",
-                  color: "#555",
-                  lineHeight: 1.7,
-                }}
-              >
-                <li>Go to the <b>Users</b> page in the admin panel.</li>
+              <ol className="list-decimal ml-5 space-y-1 leading-relaxed">
+                <li>Go to <b>Users</b> in the admin panel.</li>
                 <li>Click <b>Add User</b> to create a new account.</li>
-                <li>Next to a user, click <b>Assign Machine</b>.</li>
+                <li>Click <b>Assign Machine</b> next to a user.</li>
+                <li>Select one of the available <b>online machines</b>.</li>
                 <li>
-                  Select one of the available <b>online machines</b> and click{" "}
-                  <b>Assign</b>.
-                </li>
-                <li>
-                  The machine will then appear:
-                  <ul style={{ marginTop: "0.5rem" }}>
-                    <li>
-                      Next to the user in the <b>Users table</b>.
-                    </li>
-                    <li>
-                      In that user’s panel when they log in.
-                    </li>
-                  </ul>
+                  The assigned machine appears in both the user’s panel and
+                  the admin dashboard.
                 </li>
               </ol>
 
               {/* Legend */}
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 1,
-                  mt: 2,
-                  p: 1.5,
-                  border: "1px solid #ddd",
-                  borderRadius: "6px",
-                  backgroundColor: "#fafafa",
-                  textAlign: "left",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 3,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600, mb: 1 }}
-                  >
-                    Machine Status:
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      mb: 1,
-                    }}
-                  >
-                    <CircleIcon sx={{ fontSize: 14, color: "#43a047" }} /> Online
-                  </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      mb: 1,
-                    }}
-                  >
-                    <CircleIcon sx={{ fontSize: 14, color: "#e53935" }} /> Offline
-                  </Box>
-                </Box>
+              <div className="mt-4 p-3 rounded-md bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 space-y-2">
+                <Typography variant="subtitle2" className="font-semibold">
+                  Machine Status:
+                </Typography>
+                <div className="flex gap-3 flex-wrap">
+                  <span className="flex items-center gap-1 text-sm">
+                    <CircleIcon sx={{ fontSize: 12, color: "#43a047" }} /> Online
+                  </span>
+                  <span className="flex items-center gap-1 text-sm">
+                    <CircleIcon sx={{ fontSize: 12, color: "#e53935" }} /> Offline
+                  </span>
+                </div>
 
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 3,
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 600, mb: 1 }}
-                  >
-                    Script Status:
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      mb: 1,
-                      ml: 2,
-                    }}
-                  >
-                    <CircleIcon
-                      sx={{ fontSize: 14, color: "#000000de" }}
-                    />{" "}
-                    Never run
-                  </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      mb: 1,
-                    }}
-                  >
-                    <CircleIcon
-                      sx={{ fontSize: 14, color: "#ffca28b3" }}
-                    />{" "}
-                    Running
-                  </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      mb: 1,
-                    }}
-                  >
-                    <CircleIcon sx={{ fontSize: 14, color: "#43a047" }} /> Success
-                  </Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.5,
-                      mb: 1,
-                    }}
-                  >
-                    <CircleIcon
-                      sx={{ fontSize: 14, color: "#e53935b3" }}
-                    />{" "}
-                    Failed
-                  </Box>
-                </Box>
-              </Box>
-            </Box>
-          </Box>
+                <Typography variant="subtitle2" className="font-semibold mt-2">
+                  Script Status:
+                </Typography>
+                <div className="flex gap-3 flex-wrap">
+                  <StatusDot color="#000" label="Never run" />
+                  <StatusDot color="#ffca28b3" label="Running" />
+                  <StatusDot color="#43a047" label="Success" />
+                  <StatusDot color="#e53935b3" label="Failed" />
+                </div>
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      {/* User Documentation Card */}
-      <Card sx={{ boxShadow: 3, borderRadius: 2, mb: 3 }}>
+      {/* ========== User Guide Section ========== */}
+      <Card className="shadow-md rounded-xl border border-gray-200 bg-white dark:bg-[#0b1324]">
         <CardContent>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          <div className="flex items-center gap-2 mb-3">
             <TerminalIcon color="action" />
-            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+            <Typography variant="body1" className="font-semibold">
               User Guide: Running Scripts
             </Typography>
-          </Box>
+          </div>
 
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              gap: 2,
-              alignItems: "flex-start",
-            }}
-          >
-            {/* Left side: instructions */}
-            <Box sx={{ flex: 1 }}>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mb: 2 }}
-              >
-                Follow these simple steps to run a script on your assigned
-                machine:
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Instructions */}
+            <div className="flex-1 text-gray-700 dark:text-gray-300">
+              <Typography variant="body2" className="mb-2">
+                Follow these steps to run a script:
               </Typography>
 
-              <ol
-                style={{
-                  margin: 0,
-                  paddingLeft: "1.2rem",
-                  color: "#555",
-                  lineHeight: 1.7,
-                }}
-              >
+              <ol className="list-decimal ml-5 space-y-1 leading-relaxed">
+                <li>Login with your user account.</li>
+                <li>Go to <b>Vending Machines → Run Scripts</b>.</li>
                 <li>
-                  <b>Login</b> with your user account.
+                  Select your <b>machine</b> and <b>script</b>, then click{" "}
+                  <b>Run</b>.
                 </li>
+                <li>Your job will show as <b>Pending</b> until completed.</li>
                 <li>
-                  From the left sidebar, go to{" "}
-                  <b>Vending Machines → Run Scripts</b>.
+                  Once finished, check the <b>Output</b> column for results.
                 </li>
-                <li>
-                  At the top of the page, open the <b>Run Scripts</b> panel.
-                </li>
-                <ul>
-                  <li>
-                    1: Select your <b>machine</b> from the first dropdown
-                    (autocomplete makes it easy to find).
-                  </li>
-                  <li>
-                    2: Choose a <b>script</b> from the second dropdown that
-                    appears.
-                  </li>
-                  <li>3: Click the <b>Run</b> button to submit the job.</li>
-                  <li>
-                    4: Your request will appear in the table below as{" "}
-                    <b>Pending</b>.
-                  </li>
-                  <li>
-                    5: If the machine is online, it will run the script. Once
-                    finished, the <b>Output</b> column will show whether it
-                    succeeded or failed.
-                  </li>
-                </ul>
               </ol>
-            </Box>
+            </div>
 
-            {/* Right side: screenshot */}
-            <Box sx={{ flex: 1, textAlign: "center" }}>
+            {/* Screenshot */}
+            <div className="flex-1 text-center">
               <Image
                 src="/run-script.png"
-                alt="Run Scripts panel screenshot"
+                alt="Run Scripts screenshot"
                 width={700}
                 height={250}
-                style={{
-                  borderRadius: "8px",
-                  border: "1px solid #ddd",
-                  maxWidth: "100%",
-                  height: "auto",
-                }}
+                className="rounded-lg border border-gray-200 dark:border-gray-700 mx-auto"
               />
-              <Typography variant="caption" color="text.secondary">
-                Example of the "Run Scripts" panel with machine and script
-                selection
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                className="block mt-2"
+              >
+                Example of the “Run Scripts” panel
               </Typography>
-            </Box>
-          </Box>
+            </div>
+          </div>
         </CardContent>
       </Card>
-    </Box>
+    </div>
   );
 
-  // Copy Button Component
+  // --- Helper Components ---
   function CopyButton({ text }: { text: string }) {
     const [copied, setCopied] = useState(false);
-
     const handleCopy = () => {
       navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     };
-
     return (
-      <Box
+      <div
         onClick={handleCopy}
-        sx={{
-          position: "absolute",
-          top: 8,
-          right: 8,
-          backgroundColor: "#333",
-          color: "#fff",
-          p: "2px 6px",
-          borderRadius: 1,
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          gap: 0.5,
-          fontSize: "0.75rem",
-          "&:hover": { backgroundColor: "#444" },
-        }}
+        className="absolute top-2 right-2 bg-gray-800 text-white px-2 py-1 text-xs rounded cursor-pointer flex items-center gap-1 hover:bg-gray-700 transition"
       >
-        {copied ? (
-          <CheckIcon fontSize="small" />
-        ) : (
-          <ContentCopyIcon fontSize="small" />
-        )}
+        {copied ? <CheckIcon fontSize="small" /> : <ContentCopyIcon fontSize="small" />}
         {copied ? "Copied" : "Copy"}
-      </Box>
+      </div>
+    );
+  }
+
+  function StatusDot({ color, label }: { color: string; label: string }) {
+    return (
+      <span className="flex items-center gap-1 text-sm">
+        <CircleIcon sx={{ fontSize: 12, color }} /> {label}
+      </span>
     );
   }
 }

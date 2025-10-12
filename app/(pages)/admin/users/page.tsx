@@ -1,34 +1,27 @@
 "use client";
 import { useState } from "react";
-import {
-  Box,
-  TextField,
-  Button,
-  Alert,
-  IconButton,
-  InputAdornment,
-  Card,
-  CardContent,
-  CardHeader,
-  CardActions,
-  Typography,
-} from "@mui/material";
-import { Visibility, VisibilityOff } from "@mui/icons-material";
+import { Alert, Button, Card, CardContent, CardHeader } from "@mui/material";
 import UsersTable from "../../components/UsersTable";
+import InputGroup from "@/components/FormElements/InputGroup";
+import { Typography } from "@mui/material";
 
 export default function AdminUsersPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [rePassword, setRePassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
 
-  async function handleCreateUser(e: React.FormEvent) {
+  async function handleCreateUser(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setMessage("");
+    setError("");
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const rePassword = formData.get("rePassword") as string;
+
     if (password !== rePassword) {
-      setMessage("Passwords do not match");
+      setError("❌ Passwords do not match");
       return;
     }
 
@@ -42,111 +35,101 @@ export default function AdminUsersPage() {
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
+
       if (res.ok) {
         setMessage("✅ User created successfully!");
-        setEmail("");
-        setPassword("");
-        setRePassword("");
+        (e.target as HTMLFormElement).reset(); // ✅ clear form fields
       } else {
-        setMessage(data.error || "❌ Failed to create user");
+        setError(data.error || "❌ Failed to create user");
       }
     } catch (err) {
       console.error(err);
-      setMessage("❌ Error creating user");
+      setError("❌ Error creating user");
     }
   }
 
   return (
-    <Box sx={{ mx: 4, mt: 2 }}>
+    <div className="space-y-6">
       <Typography
         variant="h5"
         sx={{
-          mb: 3,
           fontWeight: 700,
-          color: "primary.main",
-          fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif", // or use Google Font
-          textTransform: "uppercase",
+          color: "#5750F1",
+          mb: 2,
         }}
       >
-        Manage Users
+        Users
       </Typography>
-      {/* Flex container for table (left) and form (right) */}
-      <Box sx={{ display: "flex", gap: 3 }}>
-        {/* Users Table (70%) */}
-        <Card sx={{ flex: 7, borderRadius: 3, boxShadow: 4 }}>
-          <CardHeader title="Users" titleTypographyProps={{ variant: "h5" }} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Users Table */}
+        <Card className="lg:col-span-2 shadow-md rounded-xl border border-gray-200 bg-white dark:bg-gray-900">
+          
           <CardContent>
             <UsersTable editable={true} />
           </CardContent>
         </Card>
 
-        {/* Create User Form (30%) */}
-        <Card sx={{ flex: 3, borderRadius: 3, boxShadow: 4 }}>
-          <CardHeader title="Create User" titleTypographyProps={{ variant: "h5" }} />
+        {/* Create User Form */}
+        <Card className="shadow-md rounded-xl border border-gray-200 bg-white dark:bg-gray-900">
+          <CardHeader
+            title="Create User"
+            titleTypographyProps={{
+              variant: "h6",
+              sx: { fontWeight: 600, color: "#111827" },
+            }}
+          />
           <CardContent>
+            {/* Show Alerts */}
+            {error && (
+              <Alert severity="error" className="mb-4">
+                {error}
+              </Alert>
+            )}
             {message && (
-              <Alert severity={message.startsWith("✅") ? "success" : "error"} sx={{ mb: 2 }}>
+              <Alert severity="success" className="mb-4">
                 {message}
               </Alert>
             )}
+
             <form onSubmit={handleCreateUser} autoComplete="off">
-              <TextField
-                fullWidth
+              <InputGroup
                 label="Email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                margin="normal"
+                name="email"
+                placeholder="Enter user email"
+                className="mb-4.5"
                 required
-                autoComplete="new-email"
               />
-              <TextField
-                fullWidth
+
+              <InputGroup
                 label="Password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                margin="normal"
+                type="password"
+                name="password"
+                placeholder="Enter password"
+                className="mb-4.5"
                 required
-                autoComplete="new-password"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword((prev) => !prev)} edge="end">
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
               />
-              <TextField
-                fullWidth
+
+              <InputGroup
                 label="Confirm Password"
-                type={showPassword ? "text" : "password"}
-                value={rePassword}
-                onChange={(e) => setRePassword(e.target.value)}
-                margin="normal"
+                type="password"
+                name="rePassword"
+                placeholder="Re-enter password"
+                className="mb-4.5"
                 required
-                autoComplete="new-password"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton onClick={() => setShowPassword((prev) => !prev)} edge="end">
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
               />
-              <CardActions sx={{ justifyContent: "center", mt: 1 }}>
-                <Button type="submit" variant="contained" size="large" sx={{ borderRadius: 2, px: 4 }}>
-                  Create User
-                </Button>
-              </CardActions>
+
+              <Button
+                type="submit"
+                variant="contained"
+                className="mt-4 w-full rounded-lg bg-primary p-[13px] font-medium text-white hover:bg-opacity-90 normal-case"
+              >
+                Create User
+              </Button>
             </form>
           </CardContent>
         </Card>
-      </Box>
-    </Box>
+      </div>
+    </div>
   );
 }

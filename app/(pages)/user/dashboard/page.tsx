@@ -1,13 +1,8 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import useSWR from "swr";
-import {
-  Box,
-} from "@mui/material";
-import Typography from "@mui/material/Typography";
 import JobsTable from "../../components/JobsTable";
-
-
+import { Typography } from "@mui/material";
 
 export default function UserDashboard() {
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : "";
@@ -20,33 +15,37 @@ export default function UserDashboard() {
     return res.json();
   };
 
-  const { data: jobs, error: jobsError, mutate: mutateJobs } = useSWR(
-    "/api/jobs",
-    fetcher,
-    {
-      refreshInterval: 5000, // ✅ auto-refresh jobs every 5s
-    }
-  );
+  const { data: jobs, error } = useSWR("/api/jobs", fetcher, {
+    refreshInterval: 5000,
+  });
+
+  useEffect(() => {
+    if (error) console.error("Job fetch error:", error);
+  }, [error]);
 
   const jobsData = jobs || [];
 
   return (
-    <>
-      <Box sx={{ mx: 4, mt: 3 }}> 
-        <Typography
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">           
+      <Typography
         variant="h5"
         sx={{
-          mb: 3,
           fontWeight: 700,
-          color: "primary.main",
-          fontFamily: "'Roboto', 'Helvetica', 'Arial', sans-serif", // or use Google Font
-          textTransform: "uppercase",
+          color: "#5750F1",
+          mb: 2,
         }}
       >
         User Dashboard
       </Typography>
-        <JobsTable jobs={jobsData} />
-      </Box>
-    </>
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          Welcome back! Here are your recent jobs.
+        </span>
+      </div>
+
+      {/* Jobs Table Section */}
+      <JobsTable jobs={jobsData} />
+    </div>
   );
 }

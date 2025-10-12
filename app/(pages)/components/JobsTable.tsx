@@ -7,8 +7,8 @@ import {
   flexRender,
   ColumnDef,
 } from "@tanstack/react-table";
-import { Box, Card, CardHeader, CardContent, TextField, Select, MenuItem, Typography } from "@mui/material";
-
+import { CardHeader } from "@mui/material";
+// Define Job type
 interface Job {
   id: number;
   pending: boolean;
@@ -25,130 +25,111 @@ interface JobsTableProps {
   jobs: Job[];
 }
 
-// Helper to format human-friendly time
+// Format time utility
 function formatTime(timestamp: string | null) {
   if (!timestamp) return "-";
   const date = new Date(timestamp);
   const now = new Date();
-  const diff = now.getTime() - date.getTime(); // milliseconds
+  const diff = now.getTime() - date.getTime();
   const seconds = Math.floor(diff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(seconds / 3600);
-  const days = Math.floor(seconds / (3600 * 24));
 
-  if (seconds < 60) return `${seconds}s`;
-  if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
-  if (hours < 24) return `${hours}h ${minutes % 60}m`;
-  return date.toLocaleString(); // show full date and time
+  if (seconds < 60) return `${seconds}s ago`;
+  if (minutes < 60) return `${minutes}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  return date.toLocaleString();
 }
 
 export default function JobsTable({ jobs }: JobsTableProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
+  // Prepare filtered + mapped job data
   const data = useMemo(() => {
-    return jobs.map((job) => {
-      let status = "DONE";
-      if (job.pending) status = "PENDING";
-      else if (!job.pending && !job.completedAt) status = "RUNNING";
-      else if (job.completedAt && job.stderr) status = "FAILED";
+    return jobs
+      .map((job) => {
+        let status = "DONE";
+        if (job.pending) status = "PENDING";
+        else if (!job.pending && !job.completedAt) status = "RUNNING";
+        else if (job.completedAt && job.stderr) status = "FAILED";
 
-      return {
-        id: job.id,
-        machine: job.agent?.hostname || "-",
-        script: job.script?.filename || "-",
-        status,
-        stdout: job.stdout,
-        stderr: job.stderr,
-        createdAt: job.createdAt,
-        completedAt: job.completedAt,
-      };
-    }).filter((job) => {
-      const matchesSearch =
-        job.machine.toLowerCase().includes(search.toLowerCase()) ||
-        job.script.toLowerCase().includes(search.toLowerCase());
-
-      const matchesStatus = statusFilter === "ALL" || job.status === statusFilter;
-      return matchesSearch && matchesStatus;
-    });
+        return {
+          id: job.id,
+          machine: job.agent?.hostname || "-",
+          script: job.script?.filename || "-",
+          status,
+          stdout: job.stdout,
+          stderr: job.stderr,
+          createdAt: job.createdAt,
+          completedAt: job.completedAt,
+        };
+      })
+      .filter((job) => {
+        const matchesSearch =
+          job.machine.toLowerCase().includes(search.toLowerCase()) ||
+          job.script.toLowerCase().includes(search.toLowerCase());
+        const matchesStatus = statusFilter === "ALL" || job.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      });
   }, [jobs, search, statusFilter]);
 
+  // Define columns
   const columns: ColumnDef<typeof data[0]>[] = [
-    { accessorKey: "id", header: "Job ID", size: 60 },
-    { accessorKey: "machine", header: "Machine", size: 150 },
-    { accessorKey: "script", header: "Script", size: 200 },
+    { accessorKey: "id", header: "Job ID" },
+    { accessorKey: "machine", header: "Machine" },
+    { accessorKey: "script", header: "Script" },
     {
       accessorKey: "status",
       header: "Status",
-      size: 100,
       cell: ({ getValue }) => {
         const val = getValue() as string;
-        const colors: Record<string, string> = {
-          PENDING: "#ff9800",
-          RUNNING: "#2196f3",
-          FAILED: "#f44336",
-          DONE: "#4caf50",
+        const statusStyles: Record<string, string> = {
+          PENDING: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300",
+          RUNNING: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+          FAILED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+          DONE: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300",
         };
         return (
-          <Typography sx={{ fontWeight: 700, color: colors[val], fontSize: "0.85rem" }}>
+          <span
+            className={`px-2 py-1 text-xs font-semibold rounded-md ${statusStyles[val] || ""}`}
+          >
             {val}
-          </Typography>
+          </span>
         );
       },
     },
     {
       accessorKey: "createdAt",
       header: "Created",
-      size: 150,
-      cell: ({ getValue }) => <Typography>{formatTime(getValue() as string)}</Typography>,
+      cell: ({ getValue }) => <span>{formatTime(getValue() as string)}</span>,
     },
     {
       accessorKey: "completedAt",
       header: "Completed",
-      size: 150,
-      cell: ({ getValue }) => <Typography>{formatTime(getValue() as string)}</Typography>,
+      cell: ({ getValue }) => <span>{formatTime(getValue() as string)}</span>,
     },
     {
       accessorKey: "stdout",
       header: "Output",
       cell: ({ row }) => (
-        <Box sx={{ maxHeight: 80, overflow: "auto" }}>
+        <div className="space-y-1 max-w-xs md:max-w-md lg:max-w-2xl">
           {row.original.stdout && (
-            <Typography
-              component="pre"
-              sx={{
-                whiteSpace: "pre-wrap",
-                fontSize: "0.75rem",
-                bgcolor: "#f5f5f5",
-                p: 0.5,
-                borderRadius: 1,
-                mb: 0.5,
-              }}
-            >
+            <pre className="bg-gray-50 dark:bg-gray-800 text-xs p-2 rounded-md text-gray-800 dark:text-gray-200 overflow-auto max-h-24">
               {row.original.stdout}
-            </Typography>
+            </pre>
           )}
           {row.original.stderr && (
-            <Typography
-              component="pre"
-              sx={{
-                whiteSpace: "pre-wrap",
-                fontSize: "0.75rem",
-                bgcolor: "#fdecea",
-                color: "#b71c1c",
-                p: 0.5,
-                borderRadius: 1,
-              }}
-            >
+            <pre className="bg-red-50 dark:bg-red-950 text-xs p-2 rounded-md text-red-700 dark:text-red-300 overflow-auto max-h-24">
               {row.original.stderr}
-            </Typography>
+            </pre>
           )}
-        </Box>
+        </div>
       ),
-      size: 300,
     },
   ];
 
+  // React Table setup
   const table = useReactTable({
     data,
     columns,
@@ -157,88 +138,107 @@ export default function JobsTable({ jobs }: JobsTableProps) {
   });
 
   return (
-    <Card sx={{ borderRadius: 3, boxShadow: 4 }}>
-      <CardHeader title="Jobs History" titleTypographyProps={{ variant: "h5" }} />
-      <CardContent>
-        {/* Filters */}
-        <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-          <TextField
-            size="small"
-            placeholder="Search Machine/Script"
+    <div className="w-full bg-white dark:bg-gray-900 rounded-xl shadow-md border border-gray-200 dark:border-gray-800">
+      {/* Header + Filters */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border-b border-gray-200 dark:border-gray-800">
+
+        <CardHeader
+          title="Jobs History"
+          titleTypographyProps={{
+            variant: "h6",
+            sx: { fontWeight: 600, color: "#111827" },
+          }}
+        />
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <input
+            type="text"
+            placeholder="Search machine/script"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ flex: 1 }}
+            className="px-3 py-2 text-sm border rounded-md bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
-          <Select
-            size="small"
+          <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 text-sm border rounded-md bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            <MenuItem value="ALL">All</MenuItem>
-            <MenuItem value="PENDING">Pending</MenuItem>
-            <MenuItem value="RUNNING">Running</MenuItem>
-            <MenuItem value="FAILED">Failed</MenuItem>
-            <MenuItem value="DONE">Done</MenuItem>
-          </Select>
-        </Box>
+            <option value="ALL">All</option>
+            <option value="PENDING">Pending</option>
+            <option value="RUNNING">Running</option>
+            <option value="FAILED">Failed</option>
+            <option value="DONE">Done</option>
+          </select>
+        </div>
+      </div>
 
-        {/* Table */}
-        <Box sx={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      style={{
-                        borderBottom: "1px solid #ddd",
-                        textAlign: "left",
-                        padding: "4px 8px",
-                      }}
-                    >
-                      {flexRender(header.column.columnDef.header, header.getContext())}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr key={row.id}>
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm text-left border-collapse">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr
+                key={headerGroup.id}
+                className="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+              >
+                {headerGroup.headers.map((header) => (
+                  <th key={header.id} className="px-4 py-2 font-medium whitespace-nowrap">
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="text-center py-6 text-gray-500 dark:text-gray-400"
+                >
+                  No jobs found.
+                </td>
+              </tr>
+            ) : (
+              table.getRowModel().rows.map((row, i) => (
+                <tr
+                  key={row.id}
+                  className={`border-t dark:border-gray-800 ${i % 2 === 0 ? "bg-gray-50 dark:bg-gray-900/40" : ""
+                    } hover:bg-gray-100 dark:hover:bg-gray-800/70 transition`}
+                >
                   {row.getVisibleCells().map((cell) => (
-                    <td
-                      key={cell.id}
-                      style={{
-                        padding: "4px 8px",
-                        borderBottom: "1px solid #eee",
-                        verticalAlign: "top",
-                      }}
-                    >
+                    <td key={cell.id} className="px-4 py-2 align-top text-gray-800 dark:text-gray-200">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </Box>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-        {/* Pagination */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2 }}>
-          <Typography>
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-          </Typography>
-          <Box sx={{ display: "flex", gap: 1 }}>
-            <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-              {"<"}
-            </button>
-            <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-              {">"}
-            </button>
-          </Box>
-        </Box>
-      </CardContent>
-    </Card>
+      {/* Pagination */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 gap-3 border-t border-gray-200 dark:border-gray-800">
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+        </span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className="px-3 py-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 disabled:opacity-40"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className="px-3 py-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 disabled:opacity-40"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

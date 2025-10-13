@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Alert } from "@mui/material"; // keep for nice alerts
+import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -36,10 +37,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 space-y-2">
         {/* Logo + Title */}
         <div className="flex flex-col items-center text-center space-y-2">
-          <Image src="/assets/logos/logo.jpeg" alt="Logo" width={132} height={10} />
-          <h3 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Vending Machine Manager
-          </h3>
+          <div className="w-124 h-20 justify-center flex">
+            <Logo />
+          </div>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Sign in to access your dashboard
           </p>

@@ -13,7 +13,6 @@ export function Logo() {
         className="dark:hidden"
         alt="NextAdmin logo"
         role="presentation"
-        quality={100}
       />
 
       <Image

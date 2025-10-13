@@ -62,11 +62,11 @@ export function Sidebar() {
       >
         <div className="flex h-full flex-col py-8 pl-6 pr-3">
           {/* Logo & Close Button */}
-          <div className="relative pr-4.5">
+          <div className="relative pr-0">
             <Link
               href="/"
               onClick={() => isMobile && toggleSidebar()}
-              className="px-0 py-2.5"
+              className="px-8 py-2.5 min-h-[64px] inline-block w-full"
             >
               <Logo />
             </Link>
@@ -82,7 +82,7 @@ export function Sidebar() {
           </div>
 
           {/* Main Navigation */}
-          <div className="custom-scrollbar mt-8 flex-1 overflow-y-auto pr-3">
+          <div className="custom-scrollbar mt-12 flex-1 overflow-y-auto pr-3">
             {NAV_DATA.map((section) => (
               <div key={section.label} className="mb-6">
                 <ul className="space-y-1.5 p-0">

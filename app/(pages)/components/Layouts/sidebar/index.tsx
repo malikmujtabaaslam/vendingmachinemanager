@@ -60,7 +60,7 @@ export function Sidebar() {
           isOpen ? "w-full" : "w-0"
         )}
       >
-        <div className="flex h-full flex-col py-8 pl-6 pr-3">
+        <div className="flex h-full flex-col py-0 pl-6 pr-3">
           {/* Logo & Close Button */}
           <div className="relative pr-0">
             <Link
@@ -82,7 +82,7 @@ export function Sidebar() {
           </div>
 
           {/* Main Navigation */}
-          <div className="custom-scrollbar mt-12 flex-1 overflow-y-auto pr-3">
+          <div className="custom-scrollbar mt-8 pt-8 flex-1 overflow-y-auto pr-3 border-t border-gray-200">
             {NAV_DATA.map((section) => (
               <div key={section.label} className="mb-6">
                 <ul className="space-y-1.5 p-0">

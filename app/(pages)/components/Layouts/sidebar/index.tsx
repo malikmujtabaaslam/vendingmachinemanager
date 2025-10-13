@@ -74,9 +74,10 @@ export function Sidebar() {
             {isMobile && (
               <button
                 onClick={toggleSidebar}
-                className="absolute left-3/4 right-4.5 top-1/2 -translate-y-1/2 text-right"
+                aria-label="Close sidebar"
+                className="absolute right-2 top-4 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-200 p-2 shadow-sm"
               >
-                <ArrowLeftIcon className="ml-auto size-7" />
+                <ArrowLeftIcon className="h-5 w-5 text-blue-700 dark:text-gray-300" />
               </button>
             )}
           </div>

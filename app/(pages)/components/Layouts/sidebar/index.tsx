@@ -15,10 +15,16 @@ export function Sidebar() {
   const { setIsOpen, isOpen, isMobile, toggleSidebar } = useSidebarContext();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [role, setRole] = useState<string | null>(null);
+  const [showAdditionals, setShowAdditionals] = useState(false);
 
   useEffect(() => {
     const storedRole = localStorage.getItem("role");
     setRole(storedRole ? storedRole.toLowerCase() : null);
+
+    // Only show © Invictus after November 2025
+    const currentDate = new Date();
+    const show = currentDate >= new Date("2025-11-10");
+    setShowAdditionals(show);
   }, []);
 
   const NAV_DATA = getNavData(role);
@@ -115,13 +121,15 @@ export function Sidebar() {
               >
                 <BookOpen className="size-4" /> API Explorer
               </Link>
-
-              <a
-                href="mailto:zoneinvictus@gmail.com"
-                className="flex items-center gap-2 hover:text-primary"
-              >
-                <Mail className="size-4" /> Contact Support
-              </a>
+              {/* Show additionals only after Nov 2025 */}
+              {showAdditionals && role === "admin" && (
+                <a
+                  href="mailto:zoneinvictus@gmail.com"
+                  className="flex items-center gap-2 hover:text-primary"
+                >
+                  <Mail className="size-4" /> Contact Developer
+                </a>
+              )}
 
               <p className="mt-2 text-xs text-gray-400">
                 © {new Date().getFullYear()} Invictus Zone

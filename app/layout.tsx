@@ -3,11 +3,11 @@ import "@/css/style.css";
 import "flatpickr/dist/flatpickr.min.css";
 import "jsvectormap/dist/jsvectormap.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "../globals.css";
+import "./globals.css";
 
 import type { Metadata } from "next";
 import NextTopLoader from "nextjs-toploader";
-import { Providers } from "./providers";
+import { Providers } from "./(pages)/providers";
 
 export const metadata: Metadata = {
   title: {

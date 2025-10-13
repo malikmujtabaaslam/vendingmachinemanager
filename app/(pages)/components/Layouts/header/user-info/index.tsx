@@ -21,16 +21,21 @@ export function UserInfo() {
     if (email) setUserEmail(email);
   }, []);
 
-  const handleLogout = () => {
-    // Clear cookie
-    document.cookie = "token=; path=/; secure; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    // Clear localStorage
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("userId");
-    localStorage.removeItem("email");
-    // Redirect
-    window.location.href = "/login";
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/logout", { method: "POST" });
+
+      // Clear localStorage
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+      localStorage.removeItem("userId");
+      localStorage.removeItem("email");
+
+      // Redirect
+      window.location.href = "/login";
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
   };
 
   const USER = {

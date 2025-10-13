@@ -21,7 +21,6 @@ export default function LoginPage() {
     const data = await res.json();
 
     if (res.ok) {
-      document.cookie = `token=${data.token}; path=/; secure`;
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
       localStorage.setItem("userId", data.userId);

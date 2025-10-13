@@ -1,5 +1,5 @@
-import darkLogo from "@/assets/logos/dark.svg";
-import logo from "@/assets/logos/main.svg";
+import darkLogo from "@/assets/logos/logo.jpeg";
+import logo from "@/assets/logos/logo.jpeg";
 import Image from "next/image";
 
 export function Logo() {
@@ -7,11 +7,12 @@ export function Logo() {
     <div className="relative h-8 max-w-[10.847rem]">
       <Image
         src={logo}
-        fill
+        width={248}
+        height={32}
+        quality={100}
         className="dark:hidden"
         alt="NextAdmin logo"
         role="presentation"
-        quality={100}
       />
 
       <Image

@@ -34,10 +34,10 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#0b1120] p-4">
-      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-8 space-y-6">
+      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-4 space-y-2">
         {/* Logo + Title */}
         <div className="flex flex-col items-center text-center space-y-2">
-          <Image src="/favicon.ico" alt="Logo" width={50} height={50} />
+          <Image src="/assets/logos/logo.jpeg" alt="Logo" width={132} height={10} />
           <h3 className="text-2xl font-bold text-gray-800 dark:text-white">
             Vending Machine Manager
           </h3>
